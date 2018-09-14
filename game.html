@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1.0" />
+	<title>Courts of Chaos</title>
+	<style>
+		.c{width:100%;height:100%;image-rendering:pixelated;image-rendering:-moz-crisp-edges}
+		.u{position:fixed;top:0;cursor:pointer;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
+		.s{background-color:#126;}
+		.a{position:absolute;top:0;}
+		.r{transform:scaleX(-1)}
+		.d{filter:drop-shadow(0 1px 0 rgba(0,2,8,.8))}
+		.b{filter:drop-shadow(0 -1px 0 rgba(0,2,8,.5))}
+		.e{background-color:rgba(190,256,190,.3);border:5px solid rgba(255,255,255,.2);border-bottom:0;filter:drop-shadow(0 -3px 0 rgba(255,255,255,.8))}
+		.o{cursor:pointer}
+	</style>
+</head>
+<body style=margin:0;overflow:hidden;>
+	<div id=gm style=background-repeat:no-repeat;>
+		<div id=h class="c a" style=z-index:-1;><!-- header bgr -->
+			<div id=sky class="c a"></div><!-- sky bgr -->
+		</div>
+		<canvas id=f class=c></canvas><!-- surface layer -->
+		<div id=zz class="c a b"><!-- units layer -->
+			<div id=z class="c a d"></div>
+		</div>
+		<div id=v class=u style=image-rendering:pixelated;image-rendering:-moz-crisp-edges;><!-- UI layer -->
+			<div id=hp class=u>
+				<div class="a d e"></div>
+			</div>
+			<div id=ex title="Exit game" class=u style=left:914px;top:-6px;></div>
+			<div id=fs title="Full-screen" class=u style=left:850px;></div>
+			<div id=sd title="toggle Sound" class=u style=left:800px;opacity:1;></div>
+			<div id=ui title="toggle UI buttons" class=u style=left:750px;opacity:1;></div>
+			<div id=cl class="c a d" style=background-color:rgba(99,199,99,.6);>
+				<div id=id_32 class="a d e" style=left:832px;top:-73px;border-right:0;></div>
+				<div id=id_38 class="a d e" style=left:837px;top:-138px;border-left:0;></div>
+				<div id=id_40 class="a d e" style=left:837px;top:-33px;border-left:0;></div>
+				<div id=id_37 class="a d e" style=left:767px;top:-84px;border-right:0;></div>
+				<div id=id_39 class="a d e" style=left:898px;top:-84px;border-right:0;></div>
+				<div id=id_49 class="a d e" style=left:2px;top:-66px;padding-bottom:8px;display:none;></div>
+				<div id=id_50 class="a d e" style=left:2px;top:-134px;padding-bottom:8px;display:none;></div>
+				<div id=id_48 class="a d e" style=left:98px;top:-66px;padding-bottom:8px;display:none;></div>
+			</div>
+		</div>
+	</div>
+	<script>
+		
+		// SoundFX, sound effects
+		FX = (c=d=>{
+			var soundContext = new (window.AudioContext || window.webkitAudioContext)();
+			var oscTypes = ['square', 'sawtooth', 'triangle', 'sine'];
+			d={s:1}
+			
+			// start frequency HZ, frequency change, delay between changes, number of changes, volume, type (optional)
+			function playSound(_freq, _incr, _delay, _times, _vol, _type){
+				
+				var oscillator = soundContext.createOscillator(); // instantiate oscillator
+				oscillator.frequency.value = _freq;
+				oscillator.type = oscTypes[_type || 0];
+				
+				var modulationGain = soundContext.createGain(); // instantiate modulation for sound volume control
+				modulationGain.gain.value = 0;
+
+				var i = 0;
+				requestAnimationFrame(playTune);
+				
+				function playTune(){
+					if(!i){
+						oscillator.connect(modulationGain);
+						modulationGain.connect(soundContext.destination);
+						oscillator.start();
+					}
+					oscillator.frequency.value = _freq + _incr * i;
+					modulationGain.gain.value = (1-(i/_times)) * _vol * d.s;
+					i ++;
+					if(i < _times) {
+						requestAnimationFrame(playTune);
+					} else oscillator.stop();
+				}
+			}
+			d.t=e=>playSound(200, -10, 15, 20, 0.1, 3)
+			d.h=(e,f)=>{playSound(160, 10, 15, 5+5*e, 0.1);playSound(250, -20, 30, 5+5*e, 0.1, 1);playSound(1500, -150, 30, 5+5*e, 0.02, f||0)}
+			d.a=e=>{playSound(30, 10, 15, 15, 0.1, e||0);playSound(e*180||250, 30, 30, 9, 0.1, e||2)}
+			d.c=e=>{playSound(510, 0, 15, 20, 0.025);setTimeout(function(){playSound(2600, 1, 10, 30, 0.05);}, 80)}
+			return d;	
+		})();
+
+		
+		// TypeFX - canvas pixel font
+		X = (function() {
+			var symbols=[
+				// 32 empty characters will be added here with Array.unshift
+				
+				[],									// ! (33) - space 1p
+				[],												// " - space 25p (34)
+				
+				[[,,2], [,1,3], [1,2,3], [2,3,2], [3.25,4,1.75], [3.25,3.25,1.75], [4.5,5,1.5], [4.5,4.5,1.5]],	// # - blade 1
+				[[,,1], [1,0.5], [0.5,1,2.5], [1,2,3], [2,3,3], [3,4,3], [4,5,2]],	// $ - blade 2
+				[[], [0.5,0.5,1.5], [0.5,1,1.5], [1.5,1.5,1.75], [1.5,2.25,1.75], [2.5,2.5,1.75], [2.5,3.25,1.75], [3.25,4,2.5], [4,3.25,,2.5], [5,5]],		// % - blade 3
+				
+				[[6.5,5], [7,4], [4,7], [5,6.5], [5.5,5.5], [6,6]],					// & - guard 1
+				[[6.5,5], [7.5,4], [4,7.5], [5,6.5], [6,6]],						// ' - guard 2 (39)
+				
+				[[7,6.5], [6.5,7], [7.5,7.5,1.5], [7.5,8,1.5]],						// ( - handle 1 (40)
+				[[6.5,6.5], [7,7], [7.5,7.5,1.5], [7.5,8,1.5]],						// ) - handle 2 {41}
+				
+				[[,1], [,3], [1,2,3], [2,,,5], [4,1], [4,3]],				// * (42)
+				[[,3,5], [2,1,,5]],											// + (43)
+				[[1,6,,2], [,8]],											// , (44)
+				[[,4,4]],													// - (45)
+				[[,6]],														// . (46)
+				[],															// / space 10p (47)
+				
+
+				[[1,1,3], [,2,,4], [1,6,3], [4,2,,4]],							// 0 (48)
+				[[1,2], [2,1,,5], [1,6,3]],										// 1
+				[[,2], [1,1,3], [4,2,,2], [1,4,3], [,5], [,6,5]],				// 2
+				[[,1,5], [3,2], [4,5], [,6,4], [2,3], [1,4,3]],					// 3
+				[[,4], [1,3], [2,2], [,5,5], [3,1,,6]],							// 4
+				[[,1,5], [,2], [,3,4], [4,4,,2], [,5], [1,6,3]],				// 5
+				[[1,1,3], [4,2], [,2,,4], [1,6,3], [1,4,3], [4,5]],				// 6
+				[[,1,4], [3,2,,2], [2,4], [1,5,,2]],							// 7
+				[[1,1,3], [,2], [4,2], [,4,,2], [4,4,,2], [1,3,3], [1,6,3]],	// 8
+				[[1,1,3], [,2], [1,3,3], [4,2,,4], [1,6,3], [,5]],				// 9 (57)
+				
+				[[,2.5], [,5]],														// :
+
+				[[,.5,3], [.5,,2], [4,,2], [3.5,.5,3], [,1,6.5], [.5,1.5,5.5], [1,2,4.5], [1.5,2.5,3.5], [2,3,2.5], [3,4,.5], [2.5,3.5,1.5]],	// ; - heart - (59)
+
+				[[,3], [1,2], [1,4], [2,1], [2,5]],									// < (60)
+				[[,3,4], [,5,4]],													// = (61)
+				[[2,3], [1,2], [1,4], [,1], [,5]],									// > (62)
+				[[,1], [1,,3], [4,1,,2], [3,3], [2,4], [2,6]],						// ?
+				//[[2,,2], [1,1],[,2,,4], [1,6,3], [4,3,,3], [3,2], [2,3,,2]],		// @
+				[[2,,2], [1,1],[,2,,5], [1,7,4], [4,1,,4], [3,2], [2,3,,3], [3,5]],		// @
+
+
+				[[,3,,4], [4,3,,4], [1,2,3], [,5,4]],									// A (65)
+				[[,2,4], [,2,,5], [,4,4], [,6,4], [4,3], [4,5]],						// B
+				[[1,2,3], [,3,,3], [1,6,3], [4,5], [4,3]],								// C
+				[[,2,,5], [,2,4], [,6,4], [4,3,,3]],									// D
+				[[,2,4], [,4,3], [,6,4], [,2,,5]],										// E
+				[[,2,4], [,5,3], [,2,,5]],												// F (70)
+				[[1,2,3],[,3,,3], [1,6,3], [4,4,,3], [3,4]],							// G
+				[[,2,,5], [4,2,,5], [1,5,3]],											// H
+				[[,2,3], [,6,3], [1,3,,3]],												// I
+				[[3,2,,4], [1,6,2], [,5]],												// J
+				[[,2,,5], [1,5], [2,4], [2,4], [3,3], [4,2], [3,5], [4,6]],				// K (75)
+				[[,2,,5], [1,6,3]],														// L
+				[[,2,,5], [1,3], [3,3], [2,4], [4,2,,5]],								// M
+				[[,2,,5], [1,3], [2,4], [3,5], [4,2,,5]],								// N
+				[[1,2,3], [,3,,3], [1,6,3], [4,3,,3]],									// O
+				[[,2,,5], [,2,4], [,5,4], [4,3,,2]],									// P
+				[[1,2,3], [,3,,3], [1,6,3], [4,3,,3], [4,7]],							// Q (81)
+				[[,2,,5], [,2,4], [,5,4], [4,3,,2], [4,6]],								// R
+				[[1,2,4], [,3], [1,4,3], [4,5], [,6,4]],								// S
+				[[,2,5], [2,2,,5]],														// T
+				[[,2,,4], [1,6,3], [4,2,,4]],											// U (85)
+				[[,2,,2], [4,2,,2], [1,4,,2], [3,4,,2], [2,6]],							// V
+				[[,2,,5], [1,5], [2,4], [3,5], [4,2,,5]],								// W
+				[[,2], [1,3], [2,4], [3,5], [4,6], [4,2], [3,3], [1,5], [,6]],			// X
+				[[,2,,2], [4,2,,2], [1,4], [3,4], [2,5,,2]],							// Y
+				[[,2,5], [,6,5], [,5], [1,4,3], [4,3]],									// Z (90)
+				
+				[[,3,,5], [1,1,8], [5,6,5], [9,1,,5], [1,3,4], [5,3,,4], [1,7,5], [1,2]],									// [
+				[],																		// \
+				[[2,1,3], [2,2], [,3,3], [,4], [,5,3], [4,2], [4,3,3], [6,4], [2,6], [4,6], [4,5,3], [2,7,3]],			// ]
+				
+				[[3],[2,1,2],[1,2,3],[,3,7],[3,4,3],[3,5,2],[2,6,2],[2,7]],	 			// ^ // thunder
+				[[,4], [,3,3], [,5,3],[3,2],[4,1], [3,6],[4,7], [5,1,,7]],	 // _
+				[[,1,,2]]																// `
+			], s = [], i, j, k, h, w;
+			
+			for(i = 0; i < 33; i++) symbols.unshift([]);
+			for(i = 0; i < 33; i++) symbols.push([]);
+			for(i = 0; i < symbols.length; i++) {
+				s.push(i==33?0:i<34||i==124?1:i==34?28:i<42||i>90&&i<96||i==59?10:i==44||i==96||i==46?2:[60,62,73].indexOf(i)>-1?3:[49,55,69,70,74,76].indexOf(i)>-1?4:5);
+			}
+			symbols[111]=[[1,2,2], [,3,,3], [1,6,2], [3,3,,3]];
+			symbols[124]=[[,,,8]];
+
+			function drawDiggit(_element, _diggit, _size, _color, _width, _height){
+				if(!parseInt(_diggit)) _diggit = _diggit.charCodeAt(0);
+				if(!_color) _color = "white";
+				if(!_size) _size = 1;
+				var canvas = _element.nodeName.toLowerCase();
+				if(canvas == "canvas"){
+					canvas = _element;
+				} else {
+					canvas = document.createElement("canvas");
+				}
+				canvas.width = _size * (_width || s[_diggit]);
+				canvas.height = _size * (_height || 10);
+				drawGlyph(canvas, _diggit, _size, _color);
+				if(canvas!=_element) _element.appendChild(canvas);
+				return canvas;
+			}
+			
+			function drawGlyph(canvas, _diggit, _size, _color){
+				var context = canvas.getContext("2d");
+				context.fillStyle = _color;
+				if(symbols[_diggit]){
+					for(i = 0; i < symbols[_diggit].length; i++){
+						if(symbols[_diggit][i].length == 4) {
+							h = symbols[_diggit][i][3]; w = 1;
+						} else if(symbols[_diggit][i].length == 3) {
+							w = symbols[_diggit][i][2]; h = 1;
+						} else {w = 1; h = 1;}
+						context.beginPath();
+						context.rect(symbols[_diggit][i][0]*_size||0, ((symbols[_diggit][i][1]||0)+1)*_size, w*_size, h*_size);
+						context.fill();
+					}
+				}
+			}
+			
+			function drawText(_element, _text, _size, _leading, _color){
+				var _letter;
+				var lines = _text.toUpperCase().split("\r");
+				var widths = [];
+				for(k = 0; k < lines.length; k++){
+					widths.push(0);
+					for(j = 0; j < lines[k].length; j++){
+						_letter = drawDiggit(_element, lines[k].charCodeAt(j), _size, _color);
+						_letter.style.position = "absolute";
+						_letter.style.left = widths[k]+"px";
+						_letter.style.top = k ? (k*_size*10 + (k*_leading||0))+"px" : 0;
+						widths[k] += _letter.width + _size;
+					}
+				}
+				_element.style.width = Math.max.apply(this, widths)+"px";
+				_element.style.height = (lines.length*_size*10 + (lines.length*_leading||0))+"px";
+			}
+			
+			return{
+				d:drawDiggit,
+				t:drawText
+			}
+		})();
+
+		
+		// TweenFX - tweener of styles and transforms
+		Z = (function() {
+			var paused,
+			regex = /[+-]?\d+(\.\d+)?/g,
+			props = ['opacity','left','top','right','bottom','width','height'],
+			mods = ['rotate','scaleX','scaleY','translateX','translateY'],
+			tweenedElements = [],
+			tweenedIntervals = [];
+			
+			function tweenTo(_element, _duration, _object, _callback, _arguments){// duration represents the number of animation frames needed to reach target
+				var i,
+				count = 0,
+				delay = 5,
+				step = 5,
+				obj,
+				mod,
+				tweenObj = [],
+				trans,
+				object = {};
+
+				for(obj in _object){
+					if(obj == 'x') object.translateX = _object[obj];
+					else if(obj == 'y') object.translateY = _object[obj];
+					else if(obj == 'alpha' || obj == 'a') object.opacity = _object[obj];
+					else if(obj == 'scale' || obj == 's') {
+						object.scaleX = _object[obj];
+						object.scaleY = _object[obj];
+					} else object[obj] = _object[obj];
+				}
+				for(obj in object){
+					if(props.indexOf(obj)>-1) tweenObj.push({property:obj, start:getStyle(_element, obj), end:object[obj]});
+					else if(mods.indexOf(obj)>-1) trans = trans || getTransform(_element);
+				}
+				
+				if(trans){//rebuilding the transform string, including all transform properties
+					for(i = 0; i < mods.length; i++){
+						obj = mods[i];
+						tweenObj.push({property:obj, start:trans[obj], end:object.hasOwnProperty(obj)?object[obj]:trans[obj]});
+					}
+				}
+			
+				stopTween(_element);
+			
+				if(tweenObj.length) {
+					tweenedIntervals.push(requestAnimationFrame(tween));
+					tweenedElements.push(_element);
+				}
+				function tween(){
+					step ++;
+					if(!paused && step>=delay){
+						step = 0;
+						count += 1;
+						trans = '';
+						for(i = 0; i < tweenObj.length; i++){
+							if(tweenObj[i].start == tweenObj[i].end){
+								mod = tweenObj[i].end;
+							} else {
+								if(tweenObj[i].start > tweenObj[i].end){
+									obj = tweenObj[i].end + (tweenObj[i].start - tweenObj[i].end) / _duration * (_duration-count);
+								} else {
+									obj = tweenObj[i].start - (tweenObj[i].start - tweenObj[i].end) / _duration * count;
+								}
+								mod = ((count >= _duration) ? tweenObj[i].end : obj);
+							}
+
+							mod += ((props.indexOf(tweenObj[i].property) > 0 || mods.indexOf(tweenObj[i].property) > 2) ? 'px' : ((!mods.indexOf(tweenObj[i].property))?'deg':'') );
+							if(props.indexOf(tweenObj[i].property) > -1){
+								_element.style[tweenObj[i].property] = mod;//modify any tweened styles
+							} else {
+								trans += tweenObj[i].property+'('+mod+') ';//rebuilding the whole transform string
+							}
+						}
+						if(trans.length) _element.style.transform = trans;
+						if(count >= _duration){
+							stopTween(_element);
+							if(_callback) _callback.apply(this, _arguments);
+							return;
+						}
+					}
+					i = tweenedElements.indexOf(_element);
+					if(i > -1) tweenedIntervals[i] = requestAnimationFrame(tween);
+				}
+				function getTween(_el){
+					if(!_el) return tweenedElements.length;
+					return tweenedElements.indexOf(_el);
+				}
+				function stopTween(_el, _id){
+					if(_el) _id = getTween(_el);
+					if(_id > -1){
+						cancelAnimationFrame(tweenedIntervals.splice(_id, 1));
+						tweenedElements.splice(_id, 1);
+					}
+					return _id;
+				}
+				function removeAllTweens(){
+					for(var _id = tweenedElements.length-1; _id > 0; _id--){
+						stopTween(null, _id);
+					}
+				}
+			}
+			
+			// extracts the floating number from an element's computed style property value
+			function getStyle(_element, _property){
+				return 1*((window.getComputedStyle(_element, null).getPropertyValue(_property).match(regex)||[0]).map(Number));//function (v){return 1*v;}
+			}
+			
+			// extracts the element's computed style transformation property value, or a whole object of properies (rotate, scale and translate)
+			function getTransform(_element, _property){
+				var transform = window.getComputedStyle(_element, null).getPropertyValue('transform').replace('matrix(', '').replace('matrix3d(', '').replace(')', '').split(', ').map(Number);
+				if(transform.length == 16){
+					transform = [transform[0],transform[1],transform[4],transform[5],transform[12],transform[13]];
+				} else if(transform.length < 6){
+					transform = [1,0,0,1,0,0];
+				}
+				if(_property) return getTransformObject(transform)[_property];
+				return getTransformObject(transform);
+			}
+			function getTransformObject(a) {
+				return {
+					translateX: a[4],
+					translateY: a[5],
+					scaleX: Math.sqrt(Math.pow(a[0], 2) + Math.pow(a[1], 2)),
+					scaleY: Math.sqrt(Math.pow(a[2], 2) + Math.pow(a[3], 2)),
+					rotate: (180/Math.PI) * Math.atan2(a[3], a[2]) - 90
+				};
+			}
+			
+			return{
+				o:function(_element, _duration, _object, _callback){
+					tweenTo(_element, _duration, _object, _callback, Array.apply(null, arguments).slice(4));
+				},
+				g:getStyle,
+				t:getTransform
+			};
+		})();
+
+
+		EX=c=>{
+			if(hi) {
+				if(sr>hi)hi=sr
+			} else if(sr)hi=sr
+			if(hi)window.top.location.hash='s='+hi
+			else hi=0
+			AB()
+			AC()
+		}
+		
+
+		zy=c=>{// children selector
+			if(c==null) return z.children
+			return z.children[c].children
+		}
+		ff=e=>{// fullscreen handler
+			var d=document.documentElement
+			ex==e.currentTarget||document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement||document.msFullscreenElement?document.exitFullscreen?document.exitFullscreen():document.mozCancelFullScreen?document.mozCancelFullScreen():document.webkitCancelFullScreen?document.webkitCancelFullScreen():document.msExitFullscreen&&document.msExitFullscreen():(d.requestFullscreen||d.mozRequestFullScreen||d.webkitRequestFullScreen||d.msRequestFullscreen).call(d)
+		}
+
+		//open a new windom for tweet
+		tw=s=>wp(window.innerWidth/2, window.innerHeight/2, "http://twitter.com/home?status="+encodeURIComponent(s), "html", "resizable=yes,scrollbars=no,left=0,top=0,screenX=0,screenY=0")
+		//window open
+		wp=(...r)=>{
+			var a,j,w,h,i=0
+			a = []
+			for(;i < r.length; i++) a.push(r[i])
+			w = a.shift()
+			h = a.shift()
+			a[2] = ('width=' + w + ',height=' + h + ',' +a[2])
+			try{
+				j = window.open.apply(this, a)
+				j.addEventListener("load", j.focus, false)
+			} catch(err) {}
+		}
+
+
+		AB=c=>{//base variables initialize (run once)
+			//colors data
+			sfc=[
+				'26700c1c5b062795002a840a47a01c4bb5262f9d07',//grass
+				'25160d0c0704574c3050382959664e8f89617d401a',//road
+				'5b4444695b5b938181b0d1a1a0e1b1',//ice
+				'25160d503829574c3059664e0c0704',//darker road
+				'143a221d29075c4c0014763a85700ac3d12a31aa34',//green tree
+				'283e301023175b633b414d2c727b6d8fac80848e76',//grey rock
+				'153c60161c1e5d695e952008a7a188c9d6c6e82900',//blue units
+				'4b281d280d0d5f67647d5e209ba18dc8d3cbc08e27',//box
+				'000000000000000000000000000000000000000000']//shadow
+			px=[]
+			//graphics data
+			/*dta=[
+				//tiles
+				'@@FG@FCF@ElCC^\\EFf{ZFe^Z\\Zuk_SoirkVns]j|[_beVnqS^bYV_r\\LKktcjtges\\f\\aor{]ZWk\\ZMTcaZ|csSMnbaQQyYazKJJbJJJQQPPLPPPJH@@P@@HP@@@H@@@',//grass
+				'@@@@@@QD@@\`C@ZJUB@TMUcXjMYjBjB@PjJU@PMb@U@hD@\`D@B@\`RU@@iDXQ@JUHb@KB@\`jQD@jQc@\`kQP]Lib@\`@jD@\`UD@\`a@@@Hb@L@@@@@@@@@@@@@@@@@@@@@@@@',//road
+				'@@@@@@MC@@XB@KjMA@KmUQmjM]iBiBEPjiU\`HmQ\`M@iEhUBhADHmm@DmBXmmm]hQ@KZmPmMBDimUDPiMHmMiY@H@iB@PMCDXU@@@HY@i@@@@@@@@@@@@@@@@@@@@@@@@',//
+				'@@@@@@MC@@XB@KjMA@KmUQmjM]iBiBEPjiU\`HmQ\`M@iEhUBhADHmm@DmBXmmm]hQ@KZmPmMBDimUDPiMHmMiY@H@iB@PMCDXU@@@HY@i@@@@@@@@@@@@@@@@@@@@@@@@',//
+				'@D@|DLD@\`\`gagg@\`g|oa@i|lagy\`gagKL|O|LUaigy||lLJMTD\`gSAUQiGHLZ@jJK|@AEHZjXa@@@QUE@E@@@SS@@@@@HjB@@@@@XZj@@@@@PQKM@@@@YBZZB@',//tree
+				'@F@^E@CF@EpsYA|E@YxllLh@EHgOOYaxaX|YbcKOxla@AyaAgK@upH_\`Y@^^fCjY@quk_]\\MHlng}kkC\`^}kw_gjHekQkcrC@iSL\\EcU@HMeAJJB@@Q]P@@@@@HKB@@@',//stone
+				'@D@|DLD@\`\`gagg@\`g|oa@i|lagy\`gagKL|O|LUaigy||lLJMTD\`gSAUQiGHLZ@jJK|@AEHZjXa@@@QUE@E@@@SS@@@@@HjB@@@@@XZj@@@@@PQKM@@@@YBZZB@',//tree
+				'@F@^E@CF@EpsYA|E@YxllLh@EHgOOYaxaX|YbcKOxla@AyaAgK@upH_\`Y@^^fCjY@quk_]\\MHlng}kkC\`^}kw_gjHekQkcrC@iSL\\EcU@HMeAJJB@@Q]P@@@@@HKB@@@',//stone
+
+				//unit
+				//corwin
+				'@@T{le@@@XZGYuB@@c\`XFne@@CSlmmE@@X\`kmC@@@@LJJHC@@XpkAGiC@aX^x}HuHCKMgw_nADEYx|HYHhnHCGAHPAuEJHC@JDC@YY@@aB@YPRA@HJJJ@YZ@@YYA@HKC',
+				'@@T{le@@@XZGYuB@@c\`XVne@@CSlmmE@@X\`kmC@@@@LJJHC@@YpkAGi@HcX^\`}HFQDKM|l_uHpEY\`gHk@inHCDAYHH]EJHC@QA@H[Y@@d@YAPRA@@JJJ@YZ@@YYA@HKC',
+				//'@@T{le@@@XZGYuB@@c\`XVne@@CSlmmE@@X\`kmC@@@@LJJHC@@YpkSAi@HcX^YMHFQDKMcsYuHpEYY\\Hk@inHcSAYHH]EJJC@PA@H[Y@@a@YAPRA@DJJJ@YZ@@YYA@HKC',
+				'@@T{le@@@XZGYuB@@c\`XFne@@SSlmmE@@X\`kmC@@@@LJJHC@@ZpkSAiCXaZ^YMHuaZLMcsYnJkCYY\\JYA]]HcSAHHHsEJJC@@QPHXY@@@LXYAB@@\`AJKZYB@@@PYHKC@',
+				'@@T{le@@@XZGYuB@@c\`XFne@@SSlmmE@@X\`kmC@@@@LJJHC@@ZpkSAiCXaZ^YMHuaZLMcsYnJkCYY\\JYA]]HcSAHHHsEJJC@@QPHXY@@@LXYAB@@\`AJKZYB@@@PYHKC@',
+				
+				//bird
+				'@@@@@\`|@@@@@@|@@@@@xg\`@@@@@aoE@@@dW|D@@@\`{\`bG@@@XGdO@@@@u@zD@@@@@@M@@@@@@x@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@',
+				'@@@@@@@@@h@@@\`|@@x}C@|@@@g_xg\`@@@x|auE@@@gG|D@@@@@|bG@@@@XgO@@@@@\`AD@@@@@}@@@@@@x@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@',
+				
+				//skeleton
+				'@\`]Q@@@@@innB@@@Xe]tE@@@HxF_T@@@@nZeZu@@@PwGiLE@@XbJE@k@@}Mkc@qEhAlYZ@X\\K@@KLE@K@@XYiJ@@@hK@JS@@@XA@XU@@@k@@Hk@@XM@@@YE@Ka@@@LS@',
+				'@@lnQ@@@@Huu]B@@@klckB@@@YxEg@@@@h^rUkF@@@z~Jek@@]QSk@qE@c\`_]DH\\XAHNSE@Kk@@jai@@Y@PKKKB@@@]A@YU@@XA@@HC@@i@@@kB@XM@@HYE@Ka@@@LS@',
+				
+				//soldier
+				'@@XI[a@@@@Ju]MD@@@QIJkA@@@xFoY@@@@LMKPD@@kCP@OICi^SyaxdY[]DLODzI\\]H\`RaQOXeHBCBA@C@PjcI@@@Xv^]T@XvvUPkB@vEPJJZT@@@JJJRJB@HJB@JJB',
+				'@@XI[a@@@@Jn]MD@@@QQIkA@@@D}hY@@@@bSKPD@@@Q@@LYAHkCyQLMk^SOLBYY]L\`RIxI\\]HZPxOAXe@P]LA@@C@skcB@@@sVXUP@@uVJBcJBuFJJJRJB@HJB@JJB',
+				
+				// chest
+				'@@@@@@@@\`D@@@@@@D\`@@@@@@@\`@@@@@@@D@@ik@@\`@@YMIk@@@HIkkIE\`@ikIY]Q@HUY]MVK@HKRLvzM@H]hRQlK@H]DoN]Q@H[Z]U]A@@HZ]MM@@@@H[UC@@@@@HK@@',
+				'@@@@@@@@xG@@@@@@Gx@@@@@@@x@@@@@@@G@@ik@@x@@YMIk@@@HIkkIEx@ikIY]Q@HSY]NVM@HeRLubK@HkpRQoK@H]D\\N]Q@H[Z]U]A@@HZ]MM@@@@H[UC@@@@@HK@@',
+
+				//-- dog
+				'EXYY@@@@CC@jAH@CH@XL@iYa@@s]LEKD@@okkA@@hS|LM@@@MX\`eYA@XY@@hVKpEH@@@jZU@\`A@\`aca@\\@@krirC@@HL]uYU@@A\`kCkB@XE@a]Y@@lC@yE@@HHx\`o@@',
+				'h@Kk@@XA@K@ZYHMK@@@kLk@\`@@xueA@@@Hlok\\@@@]b]Ya@@hAHtJS@EK@@JVYr@a@@PebE@HD@bYLS@@@HSNSn@@@Q]Y^]A@HCjkhiB@hA@]\\A@XMx\`gM@@DA@HkA@',
+				
+				//-- shadow
+				'@@PI@@@@@hIAA@X@XMHzTDuC@KOQaBX@@HbJQQhC@@AIIHPAX@I\`OLHIkAHAbRJAHI@IQJI@IIQRIQ@@@HIIRR@@@PIIIIA@@HHJHAI@@@HJ@AHB@@H@AH@Q@@B@@P@P',
+				'@@PI@@@E@hIAADhnXMH|aA@EXcOQLJ@kEKJJQQ@YKHIHRIPAUQQLgIJAIIJbJQI@@IQAQIA@@HIRQI@@@PIQIJ@@@HHIJIA@@@HJQAIB@@IJ@A@Q@@JHBQ@P@@P@@P@@',
+
+				//-- ygg
+				'@@||@x|@@@gDg@@@|Dg@|DzOD|D@ggPdAaz|LDRaR\`xgZWT{ya@LWfzrOD@HPeAjD@@XILLaA@xgS@aS@D|gXJ|\\DA\`L@[gQXD@@@PTZX@@C@SZ@@@@X@CB@@@',
+				'@@|D@|D@@\`gg@g@@@|Dg@|DzOG|D@ggPdAabG|LDRaRx|\`g_bzSaa@LVWtzOD@HUHlBD@x_LaaIA@|gZL@Z@D\`dcgQCDA@HH|[PXD@@@\`RZX@@C@SZP@@@X@CB@@@',
+			]
+			data=dta.join('').replace(/./g,a=>{
+				b=a.charCodeAt()
+				px.push(b&7)
+				px.push((b>>3)&7)
+			})*/
+			DT='@@EF@ECE@G|CC]\\GEesYEg]Y\\Yo{^K~zi{M}k_yt[^agM}jK]aZM^i\\TS{lcylfgk\\e\\b~is_YN{\\YWLcbYtckKW}abJJrZbqSQQaQQQJJHHTHHHQP@PH@@PH@@@P@@@@@@@@@aE@@hC@\\LbD@eJbkXTJYTDTD@\`TLb@\`Jl@b@PE@hE@D@hdb@@QEXa@LbHl@KD@hTaE@Tak@hSa\`ZMQl@h@TE@hbE@hi@@@Hl@M@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@MC@@XB@KjMA@KmUQmjM]iBiBEPjiU\`HmQ\`M@iEhUBhADHmm@DmBXmmm]hQ@KZmPmMBDimUDPiMHmMiY@H@iB@PMCDXU@@@HY@i@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@MC@@XB@KjMA@KmUQmjM]iBiBEPjiU\`HmQ\`M@iEhUBhADHmm@DmBXmmm]hQ@KZmPmMBDimUDPiMHmMiY@H@iB@PMCDXU@@@HY@i@@@@@@@@@@@@@@@@@@@@@@@@@D@|DLD@\`\`gagg@\`g|oa@i|lagy\`gagKL|O|LUaigy||lLJMTD\`gSAUQiGHLZ@jJK|@AEHZjXa@@@QUE@E@@@SS@@@@@HjB@@@@@XZj@@@@@PQKM@@@@YBZZB@@F@^E@CF@EpsYA|E@YxllLh@EHgOOYaxaX|YbcKOxla@AyaAgK@upH_\`Y@^^fCjY@quk_]\\MHlng}kkC\`^}kw_gjHekQkcrC@iSL\\EcU@HMeAJJB@@Q]P@@@@@HKB@@@@D@|DLD@\`\`gagg@\`g|oa@i|lagy\`gagKL|O|LUaigy||lLJMTD\`gSAUQiGHLZ@jJK|@AEHZjXa@@@QUE@E@@@SS@@@@@HjB@@@@@XZj@@@@@PQKM@@@@YBZZB@@F@^E@CF@EpsYA|E@YxllLh@EHgOOYaxaX|YbcKOxla@AyaAgK@upH_\`Y@^^fCjY@quk_]\\MHlng}kkC\`^}kw_gjHekQkcrC@iSL\\EcU@HMeAJJB@@Q]P@@@@@HKB@@@@@T{le@@@XZGYuB@@c\`XFne@@CSlmmE@@X\`kmC@@@@LJJHC@@XpkAGiC@aX^x}HuHCKMgw_nADEYx|HYHhnHCGAHPAuEJHC@JDC@YY@@aB@YPRA@HJJJ@YZ@@YYA@HKC@@T{le@@@XZGYuB@@c\`XVne@@CSlmmE@@X\`kmC@@@@LJJHC@@YpkAGi@HcX^\`}HFQDKM|l_uHpEY\`gHk@inHCDAYHH]EJHC@QA@H[Y@@d@YAPRA@@JJJ@YZ@@YYA@HKC@@T{le@@@XZGYuB@@c\`XFne@@SSlmmE@@X\`kmC@@@@LJJHC@@ZpkSAiCXaZ^YMHuaZLMcsYnJkCYY\\JYA]]HcSAHHHsEJJC@@QPHXY@@@LXYAB@@\`AJKZYB@@@PYHKC@@@T{le@@@XZGYuB@@c\`XFne@@SSlmmE@@X\`kmC@@@@LJJHC@@ZpkSAiCXaZ^YMHuaZLMcsYnJkCYY\\JYA]]HcSAHHHsEJJC@@QPHXY@@@LXYAB@@\`AJKZYB@@@PYHKC@@@@@@\`|@@@@@@|@@@@@xg\`@@@@@aoE@@@dW|D@@@\`{\`bG@@@XGdO@@@@u@zD@@@@@@M@@@@@@x@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@h@@@\`|@@x}C@|@@@g_xg\`@@@x|auE@@@gG|D@@@@@|bG@@@@XgO@@@@@\`AD@@@@@}@@@@@@x@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\`]Q@@@@@innB@@@Xe]tE@@@HxF_T@@@@nZeZu@@@PwGiLE@@XbJE@k@@}Mkc@qEhAlYZ@X\\K@@KLE@K@@XYiJ@@@hK@JS@@@XA@XU@@@k@@Hk@@XM@@@YE@Ka@@@LS@@@lnQ@@@@Huu]B@@@klckB@@@YxEg@@@@h^rUkF@@@z~Jek@@]QSk@qE@c\`_]DH\\XAHNSE@Kk@@jai@@Y@PKKKB@@@]A@YU@@XA@@HC@@i@@@kB@XM@@HYE@Ka@@@LS@@@XI[a@@@@Ju]MD@@@QIJkA@@@xFoY@@@@LMKPD@@kCP@OICi^SyaxdY[]DLODzI\\]H\`RaQOXeHBCBA@C@PjcI@@@Xv^]T@XvvUPkB@vEPJJZT@@@JJJRJB@HJB@JJB@@XI[a@@@@Jn]MD@@@QQIkA@@@D}hY@@@@bSKPD@@@Q@@LYAHkCyQLMk^SOLBYY]L\`RIxI\\]HZPxOAXe@P]LA@@C@skcB@@@sVXUP@@uVJBcJBuFJJJRJB@HJB@JJB@@@@@@@@\`D@@@@@@D\`@@@@@@@\`@@@@@@@D@@ik@@\`@@YMIk@@@HIkkIE\`@ikIY]Q@HUY]MVK@HKRLvzM@H]hRQlK@H]DoN]Q@H[Z]U]A@@HZ]MM@@@@H[UC@@@@@HK@@@@@@@@@@xG@@@@@@Gx@@@@@@@x@@@@@@@G@@ik@@x@@YMIk@@@HIkkIEx@ikIY]Q@HSY]NVM@HeRLubK@HkpRQoK@H]D\\N]Q@H[Z]U]A@@HZ]MM@@@@H[UC@@@@@HK@@EXYY@@@@CC@jAH@CH@XL@iYa@@s]LEKD@@okkA@@hS|LM@@@MX\`eYA@XY@@hVKpEH@@@jZU@\`A@\`aca@\\@@krirC@@HL]uYU@@A\`kCkB@XE@a]Y@@lC@yE@@HHx\`o@@h@Kk@@XA@K@ZYHMK@@@kLk@\`@@xueA@@@Hlok\\@@@]b]Ya@@hAHtJS@EK@@JVYr@a@@PebE@HD@bYLS@@@HSNSn@@@Q]Y^]A@HCjkhiB@hA@]\\A@XMx\`gM@@DA@HkA@@@PI@@@@@hIAA@X@XMHzTDuC@KOQaBX@@HbJQQhC@@AIIHPAX@I\`OLHIkAHAbRJAHI@IQJI@IIQRIQ@@@HIIRR@@@PIIIIA@@HHJHAI@@@HJ@AHB@@H@AH@Q@@B@@P@P@@PI@@@E@hIAADhnXMH|aA@EXcOQLJ@kEKJJQQ@YKHIHRIPAUQQLgIJAIIJbJQI@@IQAQIA@@HIRQI@@@PIQIJ@@@HHIJIA@@@HJQAIB@@IJ@A@Q@@JHBQ@P@@P@@P@@@@||@x|@@@gDg@@@|Dg@|DzOD|D@ggPdAaz|LDRaR\`xgZWT{ya@LWfzrOD@HPeAjD@@XILLaA@xgS@aS@D|gXJ|\\DA\`L@[gQXD@@@PTZX@@C@SZ@@@@X@CB@@@@@|D@|D@@\`gg@g@@@|Dg@|DzOG|D@ggPdAabG|LDRaRx|\`g_bzSaa@LVWtzOD@HUHlBD@x_LaaIA@|gZL@Z@D\`dcgQCDA@HH|[PXD@@@\`RZX@@C@SZP@@@X@CB@@@'
+			DA=DT.replace(/./g,a=>{
+				b=a.charCodeAt()
+				px.push(b&7)
+				px.push((b>>3)&7)
+			})
+
+			e=g=m=n=r=q=l=t=zr=hi=sc=sr=0//sky count
+			S=/*16//tile size
+			*/W=16//map width
+			H=12//map height
+			M=[]//map array
+			T=[]//tiles graphics
+			U=[]//units graphics
+
+			s1=[3,'696',1,'6a6',2,'7b7','brach of ygg',0,2,4,4]
+			//s2=[0,'e99',1,rc()+rc()+rc(),1,rc()+rc()+rc(),'flame brand',0,3,7,3]
+			//s3=[2,'aef',1,rc()+rc()+rc(),1,rc()+rc()+rc(),'ice blade',0,8,4,3]
+			s2=[2,rc()+rc()+rc(),0,rc()+rc()+rc(),0,rc()+rc()+rc(),'chaos bane',0,4,8,4]
+			s3=[1,rc()+rc()+rc(),0,rc()+rc()+rc(),0,rc()+rc()+rc(),'night`s blood',0,8,6,5]
+			//s6=[0,rc()+rc()+rc(),1,rc()+rc()+rc(),2,rc()+rc()+rc(),'chaos edge',0,8,6,4]
+
+			//swords//blade//handle/guard// damage: physical world / chaos world / magic world	
+			ss=[[0,'dcc',0,'88d',0,'efe','grayswandir',1,parseInt(2+Math.random()*2),parseInt(2+Math.random()*2),2],s1,s2,s3]
+			wo=ss[0]
+			for(;t<30;t++){
+				ss.push([parseInt(Math.random()*2.9),rc()+rc()+rc(),parseInt(Math.random()*1.9),rc()+rc()+rc(),parseInt(Math.random()*2),rc()+rc()+rc(),['dark','night','doom','shadow','chaos','amber','storm'][parseInt(Math.random()*6.5)]+' '+['sword','blade','edge','knife','dagger'][parseInt(Math.random()*4.9)],0,1+parseInt(Math.random()*(5+t/10)),1+parseInt(Math.random()*(5+t/10)),parseInt(Math.random()*4)])
+			}
+			ss.sort(t=(a,b)=>(a[8]+a[9]+a[10])-(b[8]+b[9]+b[10]));
+			
+			//console.log(ss)//swords
+
+			if(window.top.location.hash) hi=parseInt(window.top.location.hash.substr(3))
+			//if(window.location.hash) hi=parseInt(window.location.hash.substr(3))//switched to iframe
+			console.log(hi)
+
+			for(t=0;t<parseInt(DA.length/256);t++) for(j=0;j<S;j++) for(i=0;i<S;i++) M.push(px[t*256+j*S+i])
+			for(j=0;j<8*256;j+=256) T.push(M.slice(j,j+256))
+			for(j=8*256;j<DT.length*256;j+=256) U.push(M.slice(j,j+256))
+
+			this.addEventListener('wheel', E)
+			this.addEventListener('resize', R)
+
+			z.addEventListener('mouseover', HPP)
+			hp.addEventListener('mouseover', HPO)
+
+			X.t(ui, ']', 4)
+			ui.addEventListener('click', uj)
+			
+			X.t(fs, '[', 4)
+			fs.addEventListener('click', ff)
+			
+			X.t(ex, 'X', 5)
+			ex.addEventListener('click', EX)
+
+			X.t(sd, '_', 4)
+			sd.addEventListener('click', uz)
+
+			cl.addEventListener('click', na)
+			
+
+			X.t(id_39, ' !> ', 6)
+
+			X.t(id_37, '! <!!', 6)
+			
+			X.t(id_38, ' !>!', 6)
+			Z.o(id_38,0,{rotate:-90})
+			
+			X.t(id_40, '! <!', 6)
+			Z.o(id_40,0,{rotate:-90})
+
+			X.t(id_32, ' ``!', 6)
+			Z.o(id_32,0,{height:39})
+
+			
+			for(t = 0; t < 99; t++){//draw storm gradient backgrounds
+				j=document.createElement('div')
+				j.className='a c s'
+				j.style.display = 'none'
+				sky.appendChild(j)
+				i='linear-gradient(68deg,'
+				sc++
+				if(sc>76&&sc%2)sc=76;
+				for(c=0;c<sc/3;c++){
+					i+='rgba('+Math.random()*255+','+Math.random()*255+',0,'+Math.random()/3+'),rgba('+(42+Math.random()*212)+',0,64,'+(0.25+sc/76)+'),'
+				}
+				i+='rgba(190,12,128,'+(sc>5?.5:sc/10)+') '+sc+'%,rgba(92,12,128,'+(sc>5?.25:sc/20)+'),#09c '+(15+sc*0.85)+'%,#09c '+(85-sc/4)+'%,'
+				for(c=0;c<l*2+2+parseInt(sc/10);c++){
+					i+=c<1?'#09c,':'#'+parseInt(parseInt(Math.random()*16),16)+'2a,#06b,'
+				}
+				j.style.backgroundImage=i+'#025)'
+			}
+
+			//a:attack, b:, c:color, d:sprite frame, f:number of frames, h:health, i:info name, j:freeze time, l:level, m:mana, x:, s:animation type, p:position, r:new position, 
+			cw=cb(6,0,3,81,0,9+parseInt(Math.random()*9),'corwin',wo[9],'p',4,3,5,2)
+			bd=cb(6,4,99,0,0,0,'raven',0,'o')
+			sv=cb(5,0,3,0,0,0,'',0,'s',3)
+			lz=[
+				[
+					sv,//sword
+					cw,//player
+					bd,//bird
+					cb(6,12,3,92),
+					cb(4,16,5,138),
+					cb(6,4,2,18)
+				],
+				[
+					sv,
+					cw,
+					bd,
+					cb(6,12,3,57,3,15,'jackal',0,'n'),
+					cb(6,8,3,125,4,25,'warrior',0,'m'),
+					cb(6,6,6,53,1,6,'ghoul'),
+					cb(4,10,4,94,0,0,'chest'),
+					cb(6,10,4,37,6,0,'chest'),
+					cb(7,10,4,149,0,0,'chest'),
+					cb(6,10,4,139,6,0,'chest'),
+					cb(6,6,5,138,1,6,'ghoul'),
+					cb(6,6,5,132,1,5,'skeleton'),
+					cb(6,14,4,166,2,20,'shadow'),
+					cb(7,6,7,40,2,10,'goblin'),
+					cb(7,6,6,60,2,12,'goblin'),
+					cb(7,10,4,24,0,0,'chest'),
+					cb(7,16,7,28,0,0,'life',4)
+				],
+				[
+					sv,
+					cw,
+					bd,
+					cb(6,12,3,40,3,15,'jackal',0,'n'),
+					cb(6,12,4,57,3,18,'wolf'),
+					cb(7,10,4,148,0,0,'chest'),
+					cb(7,10,6,42,0,0,'chest'),
+					cb(4,6,8,35,2,40,'leprechaun'),
+					cb(4,6,6,97,2,40,'leprechaun'),
+					cb(4,6,5,99,3,45,'chief'),
+					cb(4,6,8,-9,3,45,'leprechaun'),
+					cb(0,10,4,49,0,0,'death trap'),
+					cb(7,6,5,147,2,12,'goblin'),
+					cb(7,6,6,106,2,14,'goblin'),
+					cb(2,6,9,139,3,11,'lizard'),
+					cb(7,10,6,75,0,0,'chest'),
+					cb(6,10,4,140,9,0,'chest'),
+					cb(6,10,4,39,6,0,'chest'),
+					cb(6,10,4,84,4,0,'chest'),
+					cb(7,16,6,45,0,0,'wisdom',2),	
+					cb(4,8,3,109,4,32,'guard',0,'m'),
+					cb(4,10,4,110,0,0,'chest')
+				],
+				[
+					sv,
+					cw,
+					bd,
+					cb(4,8,3,110,4,38,'armorer',0,'m'),
+					cb(7,4,6,150,1,0,'hugi',5,'g'),
+					cb(5,14,7,60,4,16,'wraith'),
+					cb(7,10,5,61,0,0,'chest'),
+					cb(6,14,6,88,3,20,'shadow'),
+					cb(7,10,3,73,0,0,'chest'),
+					cb(6,16,5,106,0,0,'old pine',3),
+					cb(4,10,4,94,0,0,'chest'),
+					cb(7,10,4,141,0,0,'chest'),
+					cb(4,14,6,154,5,21,'banshee'),
+					cb(7,10,3,171,0,0,'chest'),
+					cb(6,14,6,98,3,20,'shadow'),
+					cb(6,10,3,131,8,0,'chest'),
+					cb(6,10,3,92,9,0,'chest'),
+					cb(7,14,4,125,2,30,'ghost')
+				],
+
+				[
+					sv,
+					cw,
+					bd,
+					cb(6,12,3,91,3,22,'wolf',0,'m'),
+					cb(7,8,3,85,3,50,'brand',0,'r'),
+					cb(6,10,6,126,4,0,'chest'),
+					cb(6,10,6,41,9,0,'chest'),
+					cb(4,16,3,59,0,0,'ygg',1),
+					cb(2,14,6,94,2,40,'spectre'),
+					cb(5,6,5,125,1,20,'mummy'),
+					cb(4,14,6,167,5,21,'banshee'),
+					cb(5,14,6,136,4,24,'wraith'),
+					cb(7,10,6,37,0,0,'chest'),
+					cb(7,10,6,168,0,0,'chest'),
+					cb(4,8,3,76,3,42,'knight'),
+					cb(4,10,6,60,0,0,'chest'),
+					cb(6,10,6,120,8,0,'chest'),
+					cb(2,16,99,95,0,0,'barrier')
+				],
+				[
+					sv,
+					cw,
+					bd,
+					cb(4,12,3,122,4,32,'beast',0,'m'),
+					cb(4,8,3,54,4,35,'warrior'),
+					cb(4,10,5,39,0,0,'chest'),
+					cb(7,10,6,61,0,0,'chest'),
+					cb(7,10,7,125,0,0,'chest'),
+					cb(6,10,6,105,7,0,'chest'),
+					cb(7,10,4,92,0,0,'chest'),
+					cb(6,14,5,103,2,20,'shadow'),
+					cb(6,14,5,137,2,22,'shadow'),
+					cb(6,14,6,124,4,26,'wraith'),
+					cb(7,16,6,99,0,0,'wisdom',2),
+					cb(6,10,5,129,4,0,'chest'),
+					cb(5,14,7,60,4,22,'wraith'),
+					cb(6,10,5,87,6,0,'chest'),
+					cb(6,10,5,83,5,0,'chest'),
+					cb(4,6,8,134,2,44,'leprechaun'),
+				],
+				,
+				[
+					sv,
+					cw,
+					bd,
+					cb(1,8,9,104,6,100,'borel',0,'m'),
+					cb(1,14,6,93,0,0,'dara',-2)
+				]
+			]
+
+			ld=[
+				'.5374.b17635.841513135531.c0',//title
+				
+				'.140540051314.2545004540410445445104140001100450114115004131511.751.e1.e1.e0.20.422255.45.45222554.15.65.125525.24555555.25555555',//1
+
+				'0.64755744.d5.40.31337505.1000.211135004440000.11105000.200000.11700011770000061110061354000.a74747501313.207.2111701627.51122672131.572767675131',//1 up
+
+				'0.d0.562226.922222222.522226665222.3222254224020.22225222226606.222255222.2333.12211546600.52.e6.31313136.5611313313.d65',//1 down
+
+				'0.d0.16666700.7622226700.6222222670040.22227222670040016222222227400011112276222554111363122771734.63.f63361116116.8331740.97331',//2
+
+				'0.d0.f.36333.2333.26312133663.23.52366.46776.36363131666776001133.46.177600016.4677006760000.57000000060006.500060067.b000',//,//2 up
+
+				'0.5000.b0000.f73113.c513.c713.d17',//2 down
+
+				'.f5.6000000.250000.1000000.40000.6.40000.1000.60000.1000.60000.b00001000000.400006000000.7666'//3
+			]
+		}
+		cb=(c,d,s,p,a,h,i,b,t,f,j,m,x)=>({t:t,a:a,c:c,d:d,f:f||2,b:b||0,j:j||0,m:m||0,x:x||0,s:s,p:p,r:p,h:h,z:0,i:i,l:1})
+		
+
+		AC=(c,d,e)=>{// run an area
+			l=!c?0:+c?+c:1
+			//reposition units when changing levels
+			cw.p=cw.r=!l?84:l==1?d||81:d
+			bd.p=bd.r=!l?68:l==1?d||-80:d
+			if(l==2&&lz[l][3].h>0)lz[l][3].p=40
+			if(l==4&&r.p>0)r.p=r.r=85//brand restart
+			//if(l==7){cw.d=2;LA(1,2);}//remove jewel
+			//if(l==1&&d&&lz[l][4].h>0){lz[l][4].m=6;lz[l][4].b=lz[l][4].s}//freeze near exit when getting back from another level
+			area = W*H;
+
+			// get readable map data, 0:road, 1:grass, 2:snow, 3:road2, 4:road obstacle, 5:grass obstacle, 6:snow obstacle, 7:road2 obstacle,
+			M=[]
+			for(d=0;d<H;d++){
+				for(e=0;e<W;e++){
+					if(!l) M.push(d>=5&&d<=7||d>9?3:e-7>d&&d!=1?3:d<6?e<12?0:3:0)
+					else if(l>5) M.push(d>9?4:d<2||!e%W||e%W==W-1?4:l==7?3:0)
+					else if(l==1) M.push(d>3&&d<8?d%2||e%2?1:!(d+e%2)?1:3:d>9?2:0)
+					else M.push(d&&d<8-l||!e%W||e%W==W-1||d>9?4+parseInt(Math.random()*(1.2+l/10)):l<5&&d<7?0:1)
+				}
+			}
+			
+			for(e=d=0;d<ld[l].length;d++){//read map objects
+				c=parseInt(ld[l].charAt(d),16)
+				if(ld[l].charAt(d)=='.'){
+					d++
+					c=parseInt(ld[l].charAt(d),16)
+					e+=c
+				} else M[e] = c?c:0;
+				e++
+			}
+			//console.log(M);
+
+			f.width = W*S
+			f.height = H*(S-4)
+			
+			h.style.height = H*S+'px'
+			
+			w = f.getContext('2d');
+
+			//build new 6th level
+			if(!lz[6]){
+				lz[6]=[sv,cw,bd,cb(6,10,5,33,0,0,'chest'),cb(6,10,5,46,0,0,'chest'),cb(4,8,3,61,4,40,'armorer')]
+				for(e = 0; e < parseInt(3+Math.random()*(5+zr*2)); e++) {
+					if(zr>e)lz[6].push(cb(4+parseInt(Math.random()*4),16,3,parseInt(2+Math.random()*8)*W+2+parseInt(Math.random()*9),0,5,'paris'))
+					lz[6].push(cb(parseInt(Math.random()*8),14,4,parseInt(2+Math.random()*8)*W+2+parseInt(Math.random()*9),2+parseInt(Math.random()*4),30+parseInt(Math.random()*30),'chaos'))
+				}
+			}
+			
+			K(z)
+			for(e = 0; e < lz[l].length; e++){// create all units
+				nm=document.createElement('div')
+				nm.className='a b o'
+				z.appendChild(nm)
+				if(e>2)nm.style.zIndex=-e
+				if(e){
+					c=[]
+					for(d = 0; d < lz[l][e].f; d++){
+						np=document.createElement('div')
+						np.className='a d'
+						nm.appendChild(np)
+						nn=document.createElement('canvas')
+						np.appendChild(nn)
+						nn=X.d(nn,'',1.5,'#fff',11,11)
+						no=nn.getContext('2d')
+						nn.className='a'
+						if(d>1)nn.style.display='none'
+						L(lz[l][e].d+d,sfc[lz[l][e].c],U,no,0,0)
+						c.push(no)
+					}
+				} else dg(nm)
+				
+				if(lz[l][e].t) this[lz[l][e].t] = lz[l][e]
+				lz[l][e].z=c
+			}
+			//t:turns,u:units idle animation frames count,
+			u=k=cc=aa=i=j=0//=aa
+			B()
+		}
+
+		dg=c=>{
+			X.d(c,[')','('][wo[2]],1,'#'+wo[3]).className=X.d(c,['&','\'','o'][wo[4]],1,'#'+wo[5]).className=X.d(c,['#','$','%','@'][wo[0]],1,'#'+wo[1],wo[0]==3?8:0).className='a r d'
+		}
+		
+		//update skill buttons
+		ds=c=>{
+			my=c//enemy
+			df(id_48,['/// 0', 3, ' )', 5, ' &', 5, ' #', 5], cw.a)
+			df(id_49,['/// !1', 3, ' !)', 5, ' !&', 5, ' !#', 5, ' ^', 4], cw.m)
+			df(id_50, ['//  !2', 3.5, '!*', 7], cw.m>1)
+		}//+
+		df=(c,d,f,e)=>{
+			K(c)
+			c.style.display='block'
+			for(e=0;e<d.length;e+=2){
+				X.t(c, d[e], d[e+1])
+			}
+			Z.o(c,0,{height:50,width:80,opacity:f?1:.7})
+			if(f)c.addEventListener('mouseover', HPB)
+			c.style.pointerEvents=f?"auto":"none"
+		}
+
+		//random color
+		rc=c=>(parseInt(9+Math.random()*7)).toString(16)
+
+		// toggle ui buttons
+		uj=(c,e)=>{
+			if(ui.style.opacity==1){
+				ui.style.opacity=0.5
+				c='none'
+			} else {
+				ui.style.opacity=1
+				c='block'
+			}
+			for(e=0;e<8;e++){
+				if(cl.children[e].children.length)cl.children[e].style.display = c;
+			}
+		}
+		
+
+		// toggle sound
+		uz=c=>{
+			if(sd.style.opacity==1){
+				sd.style.opacity=0.5
+				FX.s=0
+			} else {
+				sd.style.opacity=1
+				FX.s=1
+			}
+		}
+
+
+
+		//remove ui buttons, with a tween???
+		uk=c=>{
+			id_49.style.display=id_50.style.display=id_48.style.display='none'
+			K(id_49)
+			K(id_50)
+			K(id_48)
+		}
+		
+		//E=c=>window.scrollTo(0, window.pageYOffset-c.wheelDelta/6)
+		E=c=>{//scroll field with mouse wheel
+			if(document.body.offsetHeight>window.innerHeight&&window.innerHeight<1080){
+				window.scrollTo(0, window.pageYOffset-c.wheelDelta/6);
+			}
+		}
+		R=(s,a)=>{// resize event
+			s=960/window.innerWidth
+			for(a = 0; a < zy().length; a++){
+				zy()[a].style.transform='scale('+(3.75/s)+')'
+				zy()[a].style.left=(lz[l][a].p%W*S*(3.75/s))+'px'
+				zy()[a].style.top=(parseInt(lz[l][a].p/W)*(S-5)*(3.75/s)+33.5*(1/s))+'px'
+				Z.o(zy()[a],0,{top:(parseInt(lz[l][a].p/W)*(S-5)*(3.75/s)+33.5*(1/s)),left:(lz[l][a].p%W*S*(3.75/s)),s:3.75/s})
+			}
+			v.style.transform='scale('+(1/s)+')'
+			a=Z.g(gm,'height')
+			cl.style.top=((a>window.innerHeight?window.innerHeight:a)-Z.g(cl,'height')/s)*s+'px'
+		}
+
+		L=(D,A,B,C,x,y,a,Y,j,i)=>{//A:colors array, B:pixel data, C:canvas, D:id, x,y:offset, alpha, j,i:local vars
+			w.globalAlpha = a || 1
+			for(j=Y||0;j<S;j++)for(i=0;i<S;i++)B[D][j*S+i]&&N(C, x+i, y+j, A.substr(6*(B[D][j*S+i]-1),6), 1, 1)
+			w.globalAlpha = 1
+		}
+		LA=(c,d,e,b)=>{
+			LB(c,d||0,e||0,b,0)
+			LB(c,d||0,e||0,b,1)
+		}
+		LB=(c,d,e,b,a)=>{
+			lz[l][c].z[a].clearRect(0,e,W,W-e)
+			b||L(d||lz[l][1].d+a,sfc[lz[l][1].c],U,lz[l][1].z[a],0,0,1,e)
+		}
+		OS=(c,d,e)=>{// draw surface tiles
+			if(l)sc=40
+			w.clearRect(0,0,W,W)
+			for(d=0;d<H;d++)
+				for(c=d*W;c<d*W+W;c++)
+					e=d<4||d>6?Math.round(Math.random()*2.5):1,
+					OO(c,e+2,.2,0,8),OO(c,e+3,0,M[c]>3?4:0),
+					M[c]>3&&
+						(OO(c,e-2,.4,0,8),OO(c,e,.7,0,8),OO(c,e-1,1),OO(c,e-1,1))
+			sc=0
+		}
+
+		OO=(b,y,a,c,d)=>{//draw surface////b:id,c:offset(draw shadow),y:position,a:alpha,d:color palette//draw surface and color hilights
+			y=y||0
+			a=a||0
+			c=c||0
+			d=d||M[b]-c
+			L(M[b]-c, sfc[l==7?d==0?4:d:l==2?d==5?4:d:l==3?[6,1,6,3,7,7,6,7,8][d]:d],T,w,b%W*S, y+parseInt(b/W)*(S-5)+(b<W?12:8), a?a:[.8,.8,.7,.6,.5,.6,.5,.6,.7,1,1,1][parseInt(b/W)])
+		}
+
+		//draw a pixel
+		N=(w,x,y,c,v,u)=>c&&(w.fillStyle='#'+c,w.beginPath(),w.rect(x,y,v,u),w.fill())
+
+		//navigation arrows button click event
+		na=c=>A(+(c.target.id!=''?c.target:c.target.parentNode).id.substr(3))
+		
+		Y=c=>{//storm advance
+			if(c)cc=c
+			sky.childNodes[sc].style.display='none'
+			if(!l&&sc>64&&Math.random()<.5)sc-=2
+			sc++
+			if(sc>98)sc=70
+			sky.childNodes[sc].style.display='block'
+			if(sc<30||!l)Z.o(fs,l?1+parseInt(sc/14):2,{s:1}, Y, cc)//sky animation
+			if(sc==cc&&l&&cc){
+				j=[7,7,0,5,5,5,0,0,7,0]
+				A(39)
+			}
+		}
+		
+		I=(d,c)=>{// animation idle units
+			u++
+			if(d)c=d-1
+			else{
+				c=0
+				d=lz[l].length
+			}
+			for(;c<d;c++){
+				if(u%lz[l][c].s){
+					if(c){
+						zy(c)[u%2?1:0].style.display='block'//switch animation frames idle
+						zy(c)[u%2?0:1].style.display='none'
+					} else {
+						Z.o(zy()[0],0,{x:-1,y:u%2?1:0})//adjust weapon position while idle	
+					}
+				}
+				if(!c)Z.o(zy(0)[2],3,{a:u%2?1:.4+Math.random()/9}, I)//blade fade animation
+			}
+		}
+		
+		/*D=c=>{// animation bird
+			//if(c)aa=0
+			//if(aa)return
+			i++
+			Z.o(zy()[2],u%2&&c?u%4?2:1:3,{y:i%2?-1:l<3?-1.1:1.3})
+			Z.o(zy()[2],u%2&&c?u%4?2:1:3,{y:i%2?0:l<3?-.2:.3}, D)
+		}*/
+		/*bl=(a,b,c,d)=>{//evaluation - player vs enemy
+			if(!c){
+				c=">"
+				d=1
+			}
+			return a-b*5>0?'   ':a-b>a/2?d?'  '+c:c+'  ':a-b<=0?c+c+c:d?' '+c+c:c+c+' '
+		}*/
+		
+		
+		A=c=>{//main game loop
+			if(c>=0)c={keyCode:c}
+			k=k||c.keyCode
+			if(aa)return//!&&!c
+			tp=0//output
+			PP=p.p
+			pp=PP
+			OP=o.p
+			if(k==87)k=38
+				else if(k==65)k=37
+				else if(k==83)k=40
+				else if(k==68)k=39
+			switch(k){
+				case 191:
+					//tp=':'+sr+' score'
+					tp=' offline'
+					if(hi<sr)hi=sr;
+					k++;break;
+				case 192:EX();return;
+				case 38:PP-=W*2
+				case 40:PP+=W+1
+				case 37:PP--
+				default:PP--
+				case 39:
+					PP++
+					if(k==48)AF(my)//straight attack
+					if(k==49)AF(my,1+cw.l)//skill 1
+					if(k==50)AF(my,1)//skill 2
+					if(M[PP]>3||PP%16==0&&l==1){
+						PP=pp
+						//AT(2)
+						//tp='`s way is blocked'
+						FX.t()//stuck sound effect
+					} else if(PP>W*H-W) {
+						//console.log("down",l)
+						AC(l==2?1:l==5?4:l+2,PP-10*W+1)//down
+					} else if(PP<W) {
+						//console.log("up",l)
+						AC(l==3?1:l==6?4:l+1,PP+10*W-2)//up
+					} else if(l==2&&PP==66){//leprechauns move
+						if(!lz[l][7].m)lz[l][7].r=51
+						lz[l][8].r=81
+						if(!lz[l][9].m)lz[l][9].r=83
+						//lz[l][10].p=33
+						lz[l][10].r=49
+						lz[l][11].p=49
+						lz[l][11].r=33
+						OP=-99
+						tp=' ambushed. raven dispelled.'
+						FX.t()
+					} else if(PP%W==0){//left get back to previous area
+						//console.log("left",l)
+						AC(l-3,PP+W-4)
+					} else if(PP%W==W-1){//right advance to next area
+						//console.log("right",l)
+						AC(l+3,PP-W+2)
+					}
+
+					// interaction
+					for(c=3;c<lz[l].length;c++){
+						if(lz[l][c].x){}
+						else if(PP==lz[l][c].p)PP=pp
+						else if(lz[l][c].h){
+							if(lz[l][c].m){
+								lz[l][c].m--;
+								if(!lz[l][c].m){//awake enemy after freeze
+									lz[l][c].s=lz[l][c].b
+									zy(c)[1].style.opacity=1
+									FX.a(1)
+								}
+							} else if(PP>=lz[l][c].p-1&&PP<=lz[l][c].p+1 || PP-W==lz[l][c].p || PP+W==lz[l][c].p){//attack
+								PP=pp;
+								if(id_49.children.length){
+									AF(c)//straight attack
+								} else {
+									if(k==37){
+										AT()
+										FX.t()//sound blocked
+										//tp='`s way is guarded'
+									} else {
+										ds(c)
+										AT()
+										FX.a()
+										tp='!/hp:'+cw.h+'!/dmg:'+cw.a+'/|/'+lz[l][c].i+'!/hp:'+lz[l][c].h+'!/dmg:'+lz[l][c].a
+										break
+									}
+								}
+							}
+						} else {
+							if(PP-W==lz[l][c].p || PP+W==lz[l][c].p || PP+1==lz[l][c].p || PP-1==lz[l][c].p){
+								//AF()
+								if(!lz[l][c].h){
+									if(lz[l][c].b>0){
+										if(lz[l][c].b==1){
+											s1[7]++
+											tp=' found '+s1[6]+'/dmg:'+s1[8]+' '+s1[9]+' '+s1[10]
+										} else if(lz[l][c].b==2){
+											cw.l++
+											tp=' power +1'
+										} else if(lz[l][c].b==3){
+											cw.j+=3
+											tp=' freeze +3'
+										} else {
+											if(s1[7]){
+												cw.m+=lz[l][c].b*5
+												tp=' energy +'+lz[l][c].b*5
+											} else {
+												cw.h+=lz[l][c].b*5
+												tp=' health +'+lz[l][c].b*5
+											}
+											//sr+=cw.m+cw.h
+										}
+										sr+=90*lz[l][c].b
+										lz[l][c].b=-l
+										FX.c()
+									} else if(!lz[l][c].b){
+										if(lz[l][c].c==6){
+											if(lz[l][c].p%2){
+												tp=' healed'
+												cw.h+=3+lz[l][c].a+parseInt(Math.random()*6)
+											} else {
+												tp=' reenergized'
+												cw.m+=3+lz[l][c].a+parseInt(Math.random()*4)
+											}
+										} else {
+											if(lz[l][c].c==4) tp=ss.length-(7-l)
+											else {
+												tp=parseInt(Math.random()*(l*3+9+l*2))
+												while(ss[tp][7]||ss[tp]==s1||ss[tp]==s2||ss[tp]==s3) tp=parseInt(Math.random()*(l*3+9+l*2))
+												ss[tp][7]++
+											}
+											ss[tp][7]++
+											tp=' found '+ss[tp][6]+'/dmg:'+ss[tp][8]+' '+ss[tp][9]+' '+ss[tp][10]
+										}
+										lz[l][c].x=t
+										sr+=25
+										DE(c)											
+										FX.c()
+									} else if(lz[l][c].b==-2) {MS(1);return}
+									else tp=lz[l][c].c==4?', plant my branch':lz[l][c].c==7?l==3?', fail - become absolute':', storm coming':', good luck'
+									FX.a()
+								}
+							}
+						}
+					}
+					if(!tp)uk()
+
+					// bird follow
+					if(!tp) OP=bf(OP,PP)
+
+					t++
+
+					//some ai decisions below
+					if(n.p>0&&n.m<1){//jackal move
+						if(PP+W*2 < n.p && M[n.p-W]<4 && M[n.p-W]) n.r=n.p-W;
+						else if(PP-W > n.p && M[n.p+W]<4 && M[n.p+W]) n.r=n.p+W;
+					}
+					if(m.p>0&&m.m<1){//chaos warrior move
+						if(PP+W < m.p && M[m.p-W]<4 && M[m.p-W]) m.r=m.p-W;
+						else if(PP > m.p && M[m.p+W]<4 && M[m.p+W]) m.r=m.p+W;
+					}
+					if(g.p>0&&(g.p<p.p-1||g.p>p.p+1)&&l==3){//hugi move
+						if(g.p > 152) g.a=1
+						else if(g.p < 149) g.a=0
+						if(g.a) g.r=g.p-1;
+						else g.r=g.p+1;
+					}
+
+					if(r.p>0&&!r.m&&p.r%W<9&&l==4){//brand stuff
+						if(r.s==2){
+							r.p=-9
+							r.r=-9
+							tp=', arghh...'
+							lz[l][17].p=lz[l][17].r=-9
+							uk()
+							FX.h(5,1)
+						} else if(r.p==85){
+							tp=', leave the jewel'
+							if(p.r%W>2) r.p=r.r=103
+						} else {
+							if((o.r==102||o.r==86)&&r.r==103&&!r.m){
+								tp=', what`s that bird for'
+								FX.h(1,1)
+								r.s=2
+							} else {
+								if(p.r<117){
+									if(p.r>84) r.r=51
+									else r.r=103
+								} else {
+									if(p.r%W>5||p.r==130||p.r==129||p.r==145||p.r==113||p.r==97) r.r=83
+									else if(p.r%W<4) r.r=101
+									else r.r=103
+								}
+								if(t%2&&!r.m){
+									if(Math.random()>.6){
+										FX.h(2,1)
+										tp=' was hit by brand'
+										cw.h-=1
+									} else {
+										FX.a(1)
+										if(!tp)tp=' dodged a shot'
+									}
+								}
+							}
+						}
+					}
+
+					p.r=PP
+					o.r=OP
+					s.r=PP+1
+
+					oo=k-37
+					k=0
+					if(p.h<=0){tp=' fell '+t+' steps in shadows';MS(2);cw.d=2;LA(1,2);k=191;return}
+					if(p.r+1==o.r||!l)k=32//
+					
+					//show blade from behind trees
+					//if(M[PP]!=4)zy(0)[1].style.visibility=zy(0)[2].style.visibility='visible'
+					
+					// hide bottom part of unit behind obstacles
+					//if(M[PP+W]>3)LA(1,0,16,1)//???
+					if(j.length){
+						if(ii<j.length&&l==1){//force initial moves
+							k=j[ii]+32
+							ii++
+							if(ii==j.length){//redraw unit frames - turn jewel on
+								cw.d=0
+								LA(1)
+								onkeydown=A
+								FX.a()
+							}
+						} else if(ii==j.length)ii++
+					}
+				//break;
+			}
+
+			//Z.o(hp,6,{a:1},D,1)
+			
+			for(c=0;c<lz[l].length; c++){
+				var z = lz[l][c]
+				if(z.r!=z.p){
+					if(!c) RS(0)//reposition sword while moving
+					else {
+						//move unit animation by 3 frames
+						zy(c)[0].style.transform=zy(c)[1].style.transform='translateX('+15*(z.r<z.p&&z.r>z.p-W+1?1:z.r>z.p&&z.r<z.p+W-1?-1:0)+'px) translateY('+11*(z.r<=z.p-W?1:z.r>=z.p+W?-1:0)+'px)'
+						Z.o(zy(c)[0],z.r<=z.p-W||z.r>=z.p+W?2:3,{x:0,y:0})
+						Z.o(zy(c)[1],z.r<=z.p-W||z.r>=z.p+W?2:3,{x:0,y:0})
+						//walk imitation//redraw mid frame
+						if(c==1 && M[p.r+W]<4)LA(1,3,12)
+					}
+					if(z.r)z.p=z.r
+				}
+			}
+
+			//redraw unit after being hidden by an obstacle
+			if(M[p.p+W]>3){LA(1);LA(1,3,12,1)}
+
+			Z.o(sky,2,{s:1},function(){
+				//hide sword behind trees
+				//if(M[PP+1]==4){
+					//zy(0)[1].style.visibility=zy(0)[2].style.visibility='hidden'
+				//}
+
+				if(M[p.p+W*2]>3 && oo>0 && oo<3)LA(1)
+
+				RS(1)//reposition sword while moving
+				
+				Z.o(sky,2,{s:1},function(c){
+					//reset sword position
+					RS(-1)
+
+					//console clear
+					CN()
+					
+					//redraw unit after being hidden by an obstacle
+					if(M[p.p+W]>3)LA(1,3,11,1)
+					else LA(1);// otherwise redraw the temporaly walk frame with the standing pose
+
+					//auto play a scheduled move
+					if(k>0&&k<191)Z.o(ex,l?0:9,{a:1},A,k)
+
+					if(l)HP()
+
+				})
+
+			})
+			
+			I(1)//animation idle main unit
+
+			R()//reposition units
+
+			Y()//sky advance
+
+			//if(l)HP()
+		}
+
+		bf=(O,P)=>{//bird follow
+			if(O<W+2)O+=W
+			if(P!=p.p&&P!=O){// bird position while moving
+				if(O<P-W-1&&parseInt(O/W)==parseInt((P-W)/W)) O++
+				else if(O<P+W-1&&parseInt(O/W)==parseInt((P+W)/W)) O++
+				else if(O<P-W-1) O+=W; else if(O>=P+W*2-1) O-=W
+				else if((O>P+1&&parseInt(O/W)==parseInt(P/W)) || (O>P-W+1&&parseInt(O/W)==parseInt((P-W)/W)) || (O>P+W+1&&parseInt(O/W)==parseInt((P+W)/W))) O--
+				else if(O<P-1&&parseInt(O/W)==parseInt(P/W)) O++
+				else if(O==P+1&&P==pp+W)O-=W
+				else if(O==P+1&&P==pp-W)O+=W
+			} else {// bird position on idle
+				if(P+1==p.p)O-=W
+				else if(O==P-W-2)O+=1
+				else if(O==P+W-2)O+=1
+				else if(P!=pp&&O!=P)O=pp
+				else if(P!=pp)O=pp
+				else if(O==P-W+1)O=P+1
+				else if(O==P+1)O=P+W+1
+				else if(O==P+W+1)O=P+W
+				else if(O==P+W)O=P+W-1
+				else if(O==P+W-1)O=P-1
+				else if(O==P-1)O=P-W-1
+				else if(O==P-W-1)O=P-W
+				else if(O==P-W)O=P-W+1;
+			}
+			return O
+		}
+
+		
+		AF=(c,d,e)=>{//attack the enemy
+			e=cw.a
+			if(d==1)e=l+1
+			else if(d>1)e+=(d-1)*2
+			AT(1)
+			if(k!=37){
+				tp=' '+(d?d==1?'stun':'blasted':'swinged')+' '+lz[l][c].i+' for '+e+' dmg'
+				lz[l][c].h -= e
+				if(lz[l][c].h<1){
+					FX.h(5,1)
+					tp+=', '+lz[l][c].i+' is destroyed'
+					cw.m+=1
+					lz[l][c].x=t//destroyed on t move
+					sr+=lz[l][c].a*10+lz[l][c].d//score
+					if(l==6&&s1[7]){
+						e=0
+						for(d=0;d<lz[l].length;d++){
+							if(lz[l][d].h>0)e+=lz[l][d].h
+						}
+						if(e<W){
+							s1[7]=0
+							tp+=' planted ygg branch'
+							sr+=99
+							zr++
+						}
+					}
+					DE(c)
+					uk()
+					d=0
+				} else if(d==1){
+					FX.h(3)
+					tp+=', freezed for '+cw.j+' turns'
+					lz[l][c].m=cw.j+2
+					lz[l][c].b=lz[l][c].s
+					lz[l][c].s=2
+					cw.m-=2
+					uk()
+					d=0
+					Z.o(zy(c)[1],2,{x:2,a:.4},Z.o,zy(c)[1],2,{x:0,a:.9},Z.o,zy(c)[1],2,{x:1,a:.7});
+				} else {
+					FX.h(d?4:1,1)
+					if(d)cw.m--
+					d=1
+					tp+=', enemy hit back for '+lz[l][c].a+' dmg'
+					cw.h-=lz[l][c].a
+					//move enemy - fighting
+					Z.o(zy(c)[0],3,{x:2},e=>{
+						FX.h(1)
+						FX.a(1)
+						Z.o(zy(c)[0],3,{x:-8},Z.o,zy(c)[0],4,{x:0})
+						Z.o(zy(c)[1],3,{x:-8},Z.o,zy(c)[1],4,{x:0})
+					})
+				}
+				if(d)ds(c)
+			}
+		}
+
+		
+		AT=c=>{//adjust position attacking animation
+			if(c)zy(0)[0].style.transform=zy(0)[1].style.transform=zy(0)[2].style.transform='translateX(6px) scaleX(-1)'
+			zy(1)[0].style.transform=zy(1)[1].style.transform='translateX(6px)'
+			Z.o(zy(1)[0],3,{x:6,y:0},c=>{Z.o(zy(1)[0],2,{x:0,y:0});Z.o(zy(1)[1],2,{x:0,y:0})})
+		}
+		//reposition sword
+		RS=c=>{
+			if(c<0)pp=[0,0]
+			else if(oo>=0&&oo<=3) pp=[[[9,1],[-2,6],[-12,1],[-2,-6]], [[4,1],[-2,1],[-6,1],[-2,-1]]][c][oo]
+			zy(0)[0].style.transform=zy(0)[1].style.transform=zy(0)[2].style.transform='translateX('+pp[0]+'px) translateY('+pp[1]+'px) scaleX(-1)'
+		}
+		
+		// destroying a unit
+		DE=(c,d)=>{
+			aa=1
+			Z.o(zy(c)[0],9,{a:0})
+			Z.o(zy(c)[1],2,{x:2,y:0},Z.o,zy(c)[1],2,{x:-1,y:0},Z.o,zy(c)[1],2,{x:1,y:0},Z.o,zy(c)[1],6,{a:0},d=>{lz[l][c].p=lz[l][c].r=-1;aa=0})
+		}
+		
+		//console output
+		CN=c=>{
+			K(cl,8)//remove all elements except 8 ui buttons
+			X.t(cl, '  '+(c||(tp?'corwin'+tp:0)||'@')+'  ', 3, 0, '#fff')
+		}
+
+		
+		
+		HP=(c,d,e,f,g)=>{// update ui
+			K(hp)
+			e=c=>(!M[c]||M[c]==4||M[c]==5)?0:M[c]==1||M[c]==3?1:2
+			if(l){
+				d=g=0
+				for(c=0;c<ss.length;c++){
+					f=e(s.p)
+					if(ss[c][7]){
+						f=ss[c][8+f]+(ss[c][10]/10+ss[c][9]/100+ss[c][8]/1000)
+						if(f > d) {g=c;d=f}
+					}
+				}
+				if(wo!=ss[g]){//update corwin's sword
+					wo = ss[g]
+					K(zy()[0])
+					dg(zy()[0])
+				}
+				cw.a=wo[8+e(s.p)]
+				hp.style.backgroundColor="rgba(0,0,0,.1)"
+				X.t(hp, '', 1, 0, 0)
+				if(cw.d<2){
+					X.t(hp, '!;', 6, 0, '#c22')
+					X.t(hp, ' `', 4.5, 0, '#f88')
+					X.t(hp, '///'+p.h, 4, 0,'#fff')
+
+					X.t(hp, '""""""/score !'+('000').substr(sr>999?3:sr>99?2:sr>9?1:0)+sr, 3, 0,'#bdf')
+					X.t(hp, '"""/  '+wo[8], 4, 0,!M[s.p]||M[s.p]==4||M[s.p]==5?'#fff':'#8b8')
+					X.t(hp, '// :"  :"  !:/'+wo[9], 4, 0,M[s.p]==1||M[s.p]==3?'#fff':'#b88')
+					X.t(hp, '"""//// '+wo[10], 4, 0,M[s.p]==2||M[s.p]>5?'#fff':'#88b')
+
+					X.t(hp, '""'+cw.m, 4, 0,'#fff')
+					X.t(hp, '"// !^', 4, 0,'#f88')
+					
+					X.t(hp, '""////'+([')','('][wo[2]]), 4, 0,'#'+wo[3])//handle
+					X.t(hp, '""////'+(['&','\'','  o'][wo[4]]), 4, 0,'#'+wo[5])//guard
+					X.t(hp, '""////'+(['#','$','%',' @'][wo[0]])+'"' , 4, 0,'#'+wo[1])//blade
+				}
+			} else {
+				hp.style.backgroundColor=""
+				X.t(hp, '  hi-score:'+hi, 4, 0,'#fff')
+				X.t(hp, '\r\r\r\r\r\r\r\r""""///start game\r\r\r\r\r//13kb code by noncho savov"""@!foumartgames', 3, 0,'#cfc')
+				X.t(hp, '\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r//based on courts of chaos by roger zelazny\r\r\r\r//js13k games 2018"""""""""www.foumartgames.com', 2, 0,'#efe')
+				if(hi) X.t(hp, '\r\r  !tweet', 3.5, 0,'#fcc')
+				else z.children[z.children.length-1].style.display="none"
+			}
+		}
+		
+		HPO=(c,d,e)=>{
+			d=c.target.parentNode
+			e=Array.prototype.indexOf.call(d.children,c.target);
+			if(d.children.length-e==1)CN(wo[6]+',/dmg:'+wo[8]+' '+wo[9]+' '+wo[10])
+			else CN()
+		}
+
+		HPB=(c)=>{
+			if(+c.target.id.substr(3)) c=+c.target.id.substr(3)-48
+			else if(+c.path[1].id.substr(3)) c=+c.path[1].id.substr(3)-48
+			CN(['swing:'+cw.a+' dmg','bolt:'+cw.a+'+'+(cw.l+1)+' dmg, cost:1*','freeze:'+cw.l*2+' dmg, '+cw.j+' turns, cost:2*'][c])
+		}
+
+		HPP=(c,d,e)=>{
+			d=c.target.parentNode.parentNode.parentNode
+			e=Array.prototype.indexOf.call(d.children,c.target.parentNode.parentNode)
+			if(e)CN(lz[l][e].i+(lz[l][e].h&&lz[l][e].a?'/hp:'+lz[l][e].h+'/dmg:'+lz[l][e].a:''))
+			else CN()
+		}
+
+
+		//remove all elements
+		K=(b,a)=>{for(a||(a=0);b.children.length>a;)b.removeChild(b.children[a])}
+
+		MS=c=>{// title
+			BG()
+			Z.o(f,0,{a:.5})
+			Z.o(h,0,{a:.7})
+			if(c){
+				X.t(hp, '\r\r"// '+(c==1?'victory':'defeat')+'/score:'+sr, 6, 0, '#efe')
+				k=191
+			} else {
+				Z.o(cl,0,{a:0})
+				X.t(hp, '\r\r"// torm"!haos//ane\r\r\r', 5.25, 0, '#efe'),X.t(hp, '\r///  S////  C//  !B\r\r\r""""', 8.2, 0, '#efe'),X.t(hp, '\r\r\r\r"""" of!the', 3.05, 0, '#efe')
+				hp.addEventListener('click', AA)
+				onkeydown=AA
+			}
+		}
+		
+		AA=c=>{
+			hp.removeEventListener('click', AA)
+			onkeydown=null
+
+			// title clicked on tweet button
+			if(c&&!+c)if(c.clientX<Z.g(gm,'width')/5 && c.clientY<Z.g(gm,'height')/5 && hi) tw("Got "+hi+" points in Storm of the Chaos Bane! A 13 kilobytes #rpg #indiegame by @FoumartGames for #js13k Play: "+window.location.protocol+"//"+window.location.hostname+window.location.pathname+"#s="+hi)
+
+			AC(1)
+		}
+		BG=(c,d)=>{
+			c=c||0
+			d=[
+				'#124 15%, #4a4 22%, #343 34%, #010 41%, #121 62%, #393 80%,#262 85%, #030 88%, #237',
+				'#124 13%, #031 14%, #6b6, #343, #010, #232, #6b6, #9f9 84%, #284, #9f9, #395',
+				
+				'#124 13%, #193 34%, #343',
+				'#124 13%, #193 34%, #343',
+				'#124 13%, #193 34%, #343',//???5
+				'#124 13%, #193 34%, #121 52%, #193 82%',
+				'#124 13%, #193 34%, #393 60%,#262 70%, #030 75%, #237',
+				'#124 13%, #010 24%, #464, #464, #124'
+			][c]
+			gm.style.backgroundImage='linear-gradient(rgba(8,8,99,0),rgba(9,64,212,0.2) 2%,'+d+')'
+		}
+
+		B=c=>{//begin level
+			BG(l)
+			if(l==1){
+				if(o.p==-80){
+					Z.o(cl,5,{a:1})
+					Z.o(f,5,{a:1})
+					Z.o(h,5,{a:1})
+					cw.d=2
+					LA(1,2)
+					sr=0
+					sky.childNodes[sc].style.display='none';
+				}
+			} else if(!l)ii=0
+			
+			HP()//update ui
+			sc=0
+			OS()//draw surface tiles
+			A(0)//main game loop initial run
+			CN()//draws text in the bottom console
+			R()//resize
+			Y(15)//animation sky
+			I()//animation idle loop
+			l||MS()//title screen texts
+		}
+		
+		AB()//init all game data, runs only once
+		AC()//init level, 0:title screen
+		
+	</script>
+</body>
+</html>
