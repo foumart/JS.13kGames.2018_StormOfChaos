@@ -398,9 +398,9 @@
 		}
 
 		//open a new windom for tweet
-		tw=s=>wp(window.innerWidth/2, window.innerHeight/2, "http://twitter.com/home?status="+encodeURIComponent(s), "html", "resizable=yes,scrollbars=no,left=0,top=0,screenX=0,screenY=0")
+		//tw=s=>wp(window.innerWidth/2, window.innerHeight/2, "http://twitter.com/home?status="+encodeURIComponent(s), "html", "resizable=yes,scrollbars=no,left=0,top=0,screenX=0,screenY=0")
 		//window open
-		wp=(...r)=>{
+		/*wp=(...r)=>{
 			var a,j,w,h,i=0
 			a = []
 			for(;i < r.length; i++) a.push(r[i])
@@ -411,7 +411,7 @@
 				j = window.open.apply(this, a)
 				j.addEventListener("load", j.focus, false)
 			} catch(err) {}
-		}
+		}*/
 
 
 		AB=c=>{//base variables initialize (run once)
@@ -520,7 +520,7 @@
 			for(j=0;j<8*256;j+=256) T.push(M.slice(j,j+256))
 			for(j=8*256;j<DT.length*256;j+=256) U.push(M.slice(j,j+256))
 
-			this.addEventListener('wheel', E)
+			//this.addEventListener('wheel', E)
 			this.addEventListener('resize', R)
 
 			z.addEventListener('mouseover', HPP)
@@ -864,11 +864,11 @@
 		}
 		
 		//E=c=>window.scrollTo(0, window.pageYOffset-c.wheelDelta/6)
-		E=c=>{//scroll field with mouse wheel
+		/*E=c=>{//scroll field with mouse wheel
 			if(document.body.offsetHeight>window.innerHeight&&window.innerHeight<1080){
 				window.scrollTo(0, window.pageYOffset-c.wheelDelta/6);
 			}
-		}
+		}*/
 		R=(s,a)=>{// resize event
 			s=960/window.innerWidth
 			for(a = 0; a < zy().length; a++){
@@ -1472,7 +1472,7 @@
 			onkeydown=null
 
 			// title clicked on tweet button
-			if(c&&!+c)if(c.clientX<Z.g(gm,'width')/5 && c.clientY<Z.g(gm,'height')/5 && hi) tw("Got "+hi+" points in Storm of the Chaos Bane! A 13 kilobytes #rpg #indiegame by @FoumartGames for #js13k Play: "+window.location.protocol+"//"+window.location.hostname+window.location.pathname+"#s="+hi)
+			//if(c&&!+c)if(c.clientX<Z.g(gm,'width')/5 && c.clientY<Z.g(gm,'height')/5 && hi) tw("Got "+hi+" points in Storm of the Chaos Bane! A 13 kilobytes #rpg #indiegame by @FoumartGames for #js13k Play: "+window.location.protocol+"//"+window.location.hostname+window.location.pathname+"#s="+hi)
 
 			AC(1)
 		}
