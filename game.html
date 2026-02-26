@@ -2,16 +2,19 @@
 <html lang="en">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1.0"	<title>Storm of the Chaos Bane</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1.0" />
+	<title>Storm of the Chaos Bane</title>
 	<style>
 		.c{width:100%;height:100%;image-rendering:pixelated;image-rendering:-moz-crisp-edges}
-		.u{position:fixed;top:0;cursor:pointer;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
+        .f{width:100%;height:100%}
+		.l{float:left;transform:translateY(-100%)}
+		.u{filter:drop-shadow(0 2px 0 rgba(0,0,0,.25));position:fixed;top:0;cursor:pointer}
 		.s{background-color:#126;}
 		.a{position:absolute;top:0;}
 		.r{transform:scaleX(-1)}
 		.d{filter:drop-shadow(0 1px 0 rgba(0,2,8,.8))}
 		.b{filter:drop-shadow(0 -1px 0 rgba(0,2,8,.5))}
-		.e{background-color:rgba(190,256,190,.3);border:5px solid rgba(255,255,255,.2);border-bottom:0;filter:drop-shadow(0 -3px 0 rgba(255,255,255,.8))}
+		.e{filter:drop-shadow(0 -3px 0 rgba(255,255,255,.8));background-color:rgba(190,256,190,.3);border:5px solid rgba(255,255,255,.2);border-bottom:0}
 		.o{cursor:pointer}
 	</style>
 </head>
@@ -20,7 +23,10 @@
 		<div id=h class="c a" style=z-index:-1;><!-- header bgr -->
 			<div id=sk class="c a"></div><!-- sk bgr -->
 		</div>
-		<canvas id=f class=c></canvas><!-- surface layer -->
+		<div class=f>
+			<canvas id=f2 class=f></canvas><!-- blurred surface layer -->
+			<canvas id=f class="c l"></canvas><!-- surface layer -->
+		</div>
 		<div id=zz class="c a b"><!-- units layer -->
 			<div id=z class="c a d"></div>
 		</div>
@@ -63,7 +69,7 @@
 				modulationGain.gain.value = 0;
 
 				var i = 0;
-				requestAnimationFrame(playTune);
+				setTimeout(playTune,17);
 				
 				function playTune(){
 					if(!i){
@@ -75,7 +81,7 @@
 					modulationGain.gain.value = (1-(i/_times)) * _vol * d.s;
 					i ++;
 					if(i < _times) {
-						requestAnimationFrame(playTune);
+						setTimeout(playTune,17);
 					} else oscillator.stop();
 				}
 			}
@@ -440,7 +446,7 @@
 		R=(c,d)=>{c=960/window.innerWidth;for(d=0;d<zy().length;d++)zy()[d].style.transform="scale("+3.75/c+")",zy()[d].style.left=lz[l][d].p%W*S*(3.75/c)+"px",zy()[d].style.top=(lz[l][d].p/W|0)*(S-5)*(3.75/c)+1/c*33.5+"px",Z.o(zy()[d],0,{top:(lz[l][d].p/W|0)*(S-5)*(3.75/c)+1/c*33.5,left:lz[l][d].p%W*S*(3.75/c),s:3.75/c});v.style.transform="scale("+1/c+")";d=Z.g(gm,"height");cl.style.top=((d>window.innerHeight?window.innerHeight:d)-Z.g(cl,"height")/c)*c+"px"};
 
 
-		E=c=>window.scrollTo(0, window.pageYOffset-c.wheelDelta/6)
+		//E=c=>window.scrollTo(0, window.pageYOffset-c.wheelDelta/6)
 		/*E=c=>{//scroll field with mouse wheel
 			if(document.body.offsetHeight>window.innerHeight&&window.innerHeight<1080){
 				window.scrollTo(0, window.pageYOffset-c.wheelDelta/6);
@@ -450,9 +456,9 @@
 
 
 		//open a new window for tweet
-		a=c=>tw(window.innerWidth/2, window.innerHeight/2, "http://twitter.com/home?status="+encodeURIComponent(c), "html", "resizable=yes,scrollbars=no,left=0,top=0,screenX=0,screenY=0")
+		//a=c=>tw(window.innerWidth/2, window.innerHeight/2, "http://twitter.com/home?status="+encodeURIComponent(c), "html", "resizable=yes,scrollbars=no,left=0,top=0,screenX=0,screenY=0")
 		//window open
-		tw=(...r)=>{
+		/*tw=(...r)=>{
 			var a,j,w,h,i=0
 			a = []
 			for(;i < r.length; i++) a.push(r[i])
@@ -463,7 +469,7 @@
 				j = window.open.apply(this, a)
 				j.addEventListener("load", j.focus, false)
 			} catch(err) {}
-		}
+		}*/
 
 		
 		AB=c=>{//base variables initialize (run once)
@@ -510,7 +516,7 @@
 			for(j=0;j<8*256;j+=256) T.push(M.slice(j,j+256))
 			for(j=8*256;j<DT.length*256;j+=256) U.push(M.slice(j,j+256))
 
-			this.addEventListener('wheel', E)
+			//this.addEventListener('wheel', E)
 			this.addEventListener('resize', R)
 
 			z.addEventListener('mouseover', HA)
@@ -756,10 +762,15 @@
 
 			f.width = W*S
 			f.height = H*(S-4)
+
+            f2.width = W*S
+			f2.height = H*(S-4)
 			
 			h.style.height = H*S+'px'
 			
-			w = f.getContext('2d');
+            w1 = f.getContext('2d');
+			w2 = f2.getContext('2d');
+			w = w1;
 
 			//6th level
 			if(s1[7] && l == 6){
@@ -888,8 +899,8 @@
 			for(d=0;d<H;d++)
 				for(c=d*W;c<d*W+W;c++)
 					e=d<4||d>6?Math.round(Math.random()*2.5):1,
-					OO(c,e+2,.2,0,8),OO(c,e+3,0,M[c]>3?4:0),
-					M[c]>3&&
+					w==w2&&(OO(c,e+2,.2,0,8),OO(c,e+3,0,M[c]>3?4:0)),
+					M[c]>3&&w==w1&&
 						(OO(c,e-2,.4,0,8),OO(c,e,.7,0,8),OO(c,e-1,1),OO(c,e-1,1))
 		}
 
@@ -1516,12 +1527,12 @@
 
 		// title clicked on tweet button
 		AA=c=>{
-			if(c&&!+c)if(c.clientX<Z.g(gm,'width')/5 && c.clientY<Z.g(gm,'height')/4 && hi) a("Got "+hi+" score in Storm of the Chaos Bane! A 13 kilobytes #adventure #rpg #indiegame by @FoumartGames for #js13k "+window.location.protocol+"//"+window.location.hostname+window.location.pathname+"#s="+hi)
-			else {
+			//if(c&&!+c)if(c.clientX<Z.g(gm,'width')/5 && c.clientY<Z.g(gm,'height')/4 && hi) a("Got "+hi+" score in Storm of the Chaos Bane! A 13 kilobytes #adventure #rpg #indiegame by @FoumartGames for #js13k "+window.location.protocol+"//"+window.location.hostname+window.location.pathname+"#s="+hi)
+			//else {
 				hp.removeEventListener('click', AA)
 				onkeydown=null
 				AC(1)
-			}
+			//}
 		}
 		BG=(c,d)=>{
 			c=c||0
@@ -1546,6 +1557,9 @@
 			for(x=0;x<sk.children.length;x++) sk.children[x].style.display='none'
 			HP()//update ui
 			x=0
+            w=w1
+			OS()//draw surface tiles
+            w=w2
 			OS()//draw surface tiles
 			A(0)//main game loop initial run
 			CN()//draws text in the bottom console
@@ -1560,108 +1574,6 @@
 		
 
 
-n=null
-
-			// title clicked on tweet button
-			//if(c&&!+c)if(c.clientX<Z.g(gm,'width')/5 && c.clientY<Z.g(gm,'height')/5 && hi) tw("Got "+hi+" points in Storm of the Chaos Bane! A 13 kilobytes #rpg #indiegame by @FoumartGames for #js13k Play: "+window.location.protocol+"//"+window.location.hostname+window.location.pathname+"#s="+hi)
-
-			AC(1)
-		}
-		BG=(c,d)=>{
-			c=c||0
-			d=[
-				'#124 15%, #4a4 22%, #343 34%, #010 41%, #121 62%, #393 80%,#262 85%, #030 88%, #237',
-				'#124 13%, #031 14%, #6b6, #343, #010, #232, #6b6, #9f9 84%, #284, #9f9, #395',
-				
-				'#124 13%, #193 34%, #343',
-				'#124 13%, #193 34%, #343',
-				'#124 13%, #193 34%, #343',//???5
-				'#124 13%, #193 34%, #121 52%, #193 82%',
-				'#124 13%, #193 34%, #393 60%,#262 70%, #030 75%, #237',
-				'#124 13%, #010 24%, #464, #464, #124'
-			][c]
-			gm.style.backgroundImage='linear-gradient(rgba(8,8,99,0),rgba(9,64,212,0.2) 2%,'+d+')'
-		}
-
-		B=c=>{//begin level
-			BG(l)
-			if(l==1){
-				if(o.p==-80){
-					Z.o(cl,5,{a:1})
-					Z.o(f,5,{a:1})
-					Z.o(h,5,{a:1})
-					cw.d=2
-					LA(1,2)
-					sr=0
-					sky.childNodes[sc].style.display='none';
-				}
-			} else if(!l)ii=0
-			
-			HP()//update ui
-			sc=0
-			OS()//draw surface tiles
-			A(0)//main game loop initial run
-			CN()//draws text in the bottom console
-			R()//resize
-			Y(15)//animation sky
-			I()//animation idle loop
-			l||MS()//title screen texts
-		}
-		
-		AB()//init all game data, runs only once
-		AC()//init level, 0:title screen
-		
-ull
-
-			// title clicked on tweet button
-			//if(c&&!+c)if(c.clientX<Z.g(gm,'width')/5 && c.clientY<Z.g(gm,'height')/5 && hi) tw("Got "+hi+" points in Storm of the Chaos Bane! A 13 kilobytes #rpg #indiegame by @FoumartGames for #js13k Play: "+window.location.protocol+"//"+window.location.hostname+window.location.pathname+"#s="+hi)
-
-			AC(1)
-		}
-		BG=(c,d)=>{
-			c=c||0
-			d=[
-				'#124 15%, #4a4 22%, #343 34%, #010 41%, #121 62%, #393 80%,#262 85%, #030 88%, #237',
-				'#124 13%, #031 14%, #6b6, #343, #010, #232, #6b6, #9f9 84%, #284, #9f9, #395',
-				
-				'#124 13%, #193 34%, #343',
-				'#124 13%, #193 34%, #343',
-				'#124 13%, #193 34%, #343',//???5
-				'#124 13%, #193 34%, #121 52%, #193 82%',
-				'#124 13%, #193 34%, #393 60%,#262 70%, #030 75%, #237',
-				'#124 13%, #010 24%, #464, #464, #124'
-			][c]
-			gm.style.backgroundImage='linear-gradient(rgba(8,8,99,0),rgba(9,64,212,0.2) 2%,'+d+')'
-		}
-
-		B=c=>{//begin level
-			BG(l)
-			if(l==1){
-				if(o.p==-80){
-					Z.o(cl,5,{a:1})
-					Z.o(f,5,{a:1})
-					Z.o(h,5,{a:1})
-					cw.d=2
-					LA(1,2)
-					sr=0
-					sky.childNodes[sc].style.display='none';
-				}
-			} else if(!l)ii=0
-			
-			HP()//update ui
-			sc=0
-			OS()//draw surface tiles
-			A(0)//main game loop initial run
-			CN()//draws text in the bottom console
-			R()//resize
-			Y(15)//animation sky
-			I()//animation idle loop
-			l||MS()//title screen texts
-		}
-		
-		AB()//init all game data, runs only once
-		AC()//init level, 0:title screen
-		
 	</script>
 </body>
 </html>
