@@ -8,12 +8,14 @@
 		.c{width:100%;height:100%;image-rendering:pixelated;image-rendering:-moz-crisp-edges}
         .f{width:100%;height:100%}
 		.l{float:left;transform:translateY(-100%)}
-		.u{filter:drop-shadow(0 2px 0 rgba(0,0,0,.25));position:fixed;top:0;cursor:pointer}
+		.u{filter:drop-shadow(0 3px 0 rgba(0,0,0,.6));position:fixed;top:0;cursor:pointer}
 		.s{background-color:#126;}
 		.a{position:absolute;top:0;}
 		.r{transform:scaleX(-1)}
+		.p{filter:drop-shadow(1px 0 0 rgba(0,2,8,.6))}
+		.q{filter:drop-shadow(-0.5px 0 0 rgba(0,2,8,.4))}
 		.d{filter:drop-shadow(0 1px 0 rgba(0,2,8,.8))}
-		.b{filter:drop-shadow(0 -1px 0 rgba(0,2,8,.5))}
+		.b{filter:drop-shadow(0 -0.5px 0 rgba(0,2,8,.6))}
 		.e{filter:drop-shadow(0 -3px 0 rgba(255,255,255,.8));background-color:rgba(190,256,190,.3);border:5px solid rgba(255,255,255,.2);border-bottom:0}
 		.o{cursor:pointer}
 	</style>
@@ -24,7 +26,7 @@
 			<div id=sk class="c a"></div><!-- sk bgr -->
 		</div>
 		<div class=f>
-			<canvas id=f2 class=f></canvas><!-- blurred surface layer -->
+			<canvas id=f2 class=f style="opacity:0.9"></canvas><!-- blurred surface layer -->
 			<canvas id=f class="c l"></canvas><!-- surface layer -->
 		</div>
 		<div id=zz class="c a b"><!-- units layer -->
@@ -396,8 +398,8 @@
 			if(hi) {
 				if(sr>hi)hi=sr
 			} else if(sr)hi=sr
-			if(hi) window.top.location.hash='s='+hi
-			else hi=0
+			/*if(hi) window.top.location.hash='s='+hi
+			else */hi=0
 			AB()
 			AC()
 		}
@@ -795,11 +797,14 @@
 						np=document.createElement('div')
 						np.className='a d'
 						nm.appendChild(np)
+						nr=document.createElement('div')
+						nr.className='a q'
+						np.appendChild(nr)
 						nn=document.createElement('canvas')
-						np.appendChild(nn)
+						nn.className='a p'
+						nr.appendChild(nn)
 						nn=X.d(nn,'',1.5,'#fff',11,11)
 						no=nn.getContext('2d')
-						nn.className='a'
 						if(d>1)nn.style.display='none'
 						L(lz[l][e].d+d,sz[lz[l][e].c],U,no,0,0)
 						c.push(no)
@@ -901,7 +906,7 @@
 					e=d<4||d>6?Math.round(Math.random()*2.5):1,
 					w==w2&&(OO(c,e+2,.2,0,8),OO(c,e+3,0,M[c]>3?4:0)),
 					M[c]>3&&w==w1&&
-						(OO(c,e-2,.4,0,8),OO(c,e,.7,0,8),OO(c,e-1,1),OO(c,e-1,1))
+						(OO(c,e-2,.7,0,8),OO(c,e,.9,0,8),OO(c,e-1,1),OO(c,e-1,1))
 		}
 
 		OO=(b,y,a,c,d)=>{//draw surface////b:id,c:offset(draw shadow),y:position,a:alpha,d:color palette//draw surface and color hilights
