@@ -6,7 +6,7 @@
 	<title>Storm of the Chaos Bane</title>
 	<style>
 		.c{width:100%;height:100%;image-rendering:pixelated;image-rendering:-moz-crisp-edges}
-        .f{width:100%;height:100%}
+		.f{width:100%;height:100%}
 		.l{float:left;transform:translateY(-100%)}
 		.u{filter:drop-shadow(0 3px 0 rgba(0,0,0,.6));position:fixed;top:0;cursor:pointer}
 		.s{background-color:#126;}
@@ -19,6 +19,7 @@
 		.e{filter:drop-shadow(0 -3px 0 rgba(255,255,255,.8));background-color:rgba(190,256,190,.3);border:5px solid rgba(255,255,255,.2);border-bottom:0}
 		.o{cursor:pointer}
 	</style>
+	<script src="https://www.foumartgames.com/includes/localscore.js" name="storm_of_chaos"></script>
 </head>
 <body style=margin:0;overflow:hidden;>
 	<div id=gm>
@@ -398,8 +399,9 @@
 			if(hi) {
 				if(sr>hi)hi=sr
 			} else if(sr)hi=sr
-			/*if(hi) window.top.location.hash='s='+hi
-			else */hi=0
+			if(sr) HiScore.store(sr)
+			/*if(hi) HiScore.store(hi)
+			else */if(!hi)hi=0
 			AB()
 			AC()
 		}
@@ -510,7 +512,8 @@
 			ss[28][10]=3
 			//console.log(ss)//swords
 
-			if(window.top.location.hash) hi=+window.top.location.hash.substr(3)
+			hi=HiScore.getBest();
+			//if(window.top.location.hash) hi=+window.top.location.hash.substr(3)
 			//if(window.location.hash) hi=parseInt(window.location.hash.substr(3))
 			//console.log(hi)
 
@@ -765,12 +768,12 @@
 			f.width = W*S
 			f.height = H*(S-4)
 
-            f2.width = W*S
+			f2.width = W*S
 			f2.height = H*(S-4)
 			
 			h.style.height = H*S+'px'
 			
-            w1 = f.getContext('2d');
+			w1 = f.getContext('2d');
 			w2 = f2.getContext('2d');
 			w = w1;
 
@@ -1562,9 +1565,9 @@
 			for(x=0;x<sk.children.length;x++) sk.children[x].style.display='none'
 			HP()//update ui
 			x=0
-            w=w1
+			w=w1
 			OS()//draw surface tiles
-            w=w2
+			w=w2
 			OS()//draw surface tiles
 			A(0)//main game loop initial run
 			CN()//draws text in the bottom console
