@@ -489,20 +489,19 @@
 
 
 		//open a new window for tweet
-		//a=c=>tw(window.innerWidth/2, window.innerHeight/2, "http://twitter.com/home?status="+encodeURIComponent(c), "html", "resizable=yes,scrollbars=no,left=0,top=0,screenX=0,screenY=0")
-		//window open
-		/*tw=(...r)=>{
-			var a,j,w,h,i=0
-			a = []
-			for(;i < r.length; i++) a.push(r[i])
-			w = a.shift()
-			h = a.shift()
-			a[2] = ('width=' + w + ',height=' + h + ',' +a[2])
-			try{
-				j = window.open.apply(this, a)
-				j.addEventListener("load", j.focus, false)
-			} catch(err) {}
-		}*/
+		a=t=>{
+			const w = 550, h = 420;
+			const left = (screen.width - w) / 2;
+			const top = (screen.height - h) / 2;
+
+			const url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(t);
+
+			const p = window.open(url, "tweet",
+				`width=${w},height=${h},left=${left},top=${top},resizable=yes,scrollbars=yes`
+			);
+
+			if (p) p.focus();
+		};
 
 		
 		AB=c=>{//base variables initialize (run once)
@@ -1506,11 +1505,11 @@
 				}
 			} else {
 				hp.style.backgroundColor=""
-				X.t(hp, '  hi-score:'+hi, 4, 0,'#fff')
+				X.t(hp, '  hi-score:'+hi + (hi && hni ? '/ by ' + hni : ''), 4, 0,'#fff')
 				X.t(hp, '\r\r\r\r\r\r\r\r\r\r\r\r\r/13kb code by noncho savov"""//@!foumartgames', 3, 0,'#cfc')
 				X.t(hp, '\r\r\r\r\r\r\r\r""""///based on courts of chaos by roger zelazny\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r//js13k games 2018"""""""""www.foumartgames.com', 2, 0,'#efe')
-				if(hi && hni) X.t(hp, '\r///' + hni, 3.6, 0,'#4d4')
-				else z.children[z.children.length-1].style.display="none"
+				if(hi && hni) X.t(hp, '\r//tweet', 3.6, 0,'#4d4')
+				//else z.children[z.children.length-1].style.display="none"
 			}
 		}
 		
@@ -1583,12 +1582,12 @@
 
 		// title clicked on tweet button
 		AA=c=>{
-			//if(c&&!+c)if(c.clientX<Z.g(gm,'width')/5 && c.clientY<Z.g(gm,'height')/4 && hi) a("Got "+hi+" score in Storm of the Chaos Bane! A 13 kilobytes #adventure #rpg #indiegame by @FoumartGames for #js13k "+window.location.protocol+"//"+window.location.hostname+window.location.pathname+"#s="+hi)
-			//else {
+			if(c&&!+c)if(c.clientX<Z.g(gm,'width')/5 && c.clientY<Z.g(gm,'height')/4 && hi) a("Got "+hi+" score in Storm of the Chaos Bane! A 13 kilobytes #adventure #rpg #indiegame by @FoumartGames for #js13k "+window.location.protocol+"//"+window.location.hostname+window.location.pathname.replace("/game.html",""))
+			else {
 				hp.removeEventListener('click', AA)
 				onkeydown=null
 				AC(1)
-			//}
+			}
 		}
 		BG=(c,d)=>{
 			c=c||0
