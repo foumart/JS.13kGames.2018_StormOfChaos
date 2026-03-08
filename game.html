@@ -13,13 +13,13 @@
 		.a{position:absolute;top:0;}
 		.r{transform:scaleX(-1)}
 		.p{filter:drop-shadow(1px 0 0 rgba(0,2,8,.6))}
-		.q{filter:drop-shadow(-0.5px 0 0 rgba(0,2,8,.4))}
+		.q{filter:drop-shadow(-0.6px 0 0 rgba(0,2,8,.4))}
 		.d{filter:drop-shadow(0 1px 0 rgba(0,2,8,.8))}
-		.b{filter:drop-shadow(0 -0.5px 0 rgba(0,2,8,.6))}
+		.b{filter:drop-shadow(0 -0.6px 0 rgba(0,2,8,.6))}
 		.e{filter:drop-shadow(0 -3px 0 rgba(255,255,255,.8));background-color:rgba(190,256,190,.3);border:5px solid rgba(255,255,255,.2);border-bottom:0}
 		.o{cursor:pointer}
 	</style>
-	<script src="https://www.foumartgames.com/includes/localscore.js" name="storm_of_chaos"></script>
+	<script src="https://www.foumartgames.com/includes/local.js" name="storm_of_chaos"></script>
 </head>
 <body style=margin:0;overflow:hidden;>
 	<div id=gm>
@@ -36,6 +36,10 @@
 		<div id=v class=u style=image-rendering:pixelated;image-rendering:-moz-crisp-edges;><!-- UI layer -->
 			<div id=hp class=u>
 				<div class="a d e"></div>
+			</div>
+			<div id=sm style=position:fixed;top:310px;left:360px;display:none;>
+				<input id=pln type=text placeholder="Enter your name" maxlength=20 style=font-weight:bold;font-size:24px;padding:8px;width:200px; onkeypress="if(event.key=='Enter'){PS()}">
+				<button onclick=PS() style="margin:5px 40px;padding:8px 16px;font-size:16px;border-radius:12px;">Submit Score</button>
 			</div>
 			<div id=ex onclick=EX() title="Exit [~]" class=u style=left:914px;top:-6px;></div>
 			<div id=fs onclick=e() title="Full-screen [F]" class=u style=left:850px;></div>
@@ -394,13 +398,38 @@
 			};
 		})();
 
+		PS=c=>{
+			var pln = document.getElementById('pln')
+			var name = pln.value.trim()
+			if (name) {
+				const data = new URLSearchParams({
+					game: "storm_of_chaos",
+					domain: "www.foumartgames.com",
+					user_name: name,
+					score: sr || hi
+				});
+
+				fetch(
+					'https://api.foumartgames.com/score_service/scorePost.php',
+					{method: "POST", body: data}
+				)
+				.then(() => {
+					hni = name
+					pln.value = ''
+					document.getElementById('sm').style.display = 'none'
+					EX()
+					HP()
+					MS()
+				});
+			}
+		}
 
 		EX=c=>{
 			if(hi) {
 				if(sr>hi)hi=sr
 			} else if(sr)hi=sr
-			if(sr) HiScore.store(sr)
-			/*if(hi) HiScore.store(hi)
+			if(sr) Local.score(sr)
+			/*if(hi) Local.store(hi)
 			else */if(!hi)hi=0
 			AB()
 			AC()
@@ -512,7 +541,21 @@
 			ss[28][10]=3
 			//console.log(ss)//swords
 
-			hi=HiScore.getBest();
+			hi=Local.getBest();
+
+			fetch('https://api.foumartgames.com/score_service/scoreGet.php?game=storm_of_chaos&domain=www.foumartgames.com&date=default')
+				.then(r=>r.json()).then(d=>{
+					let br = d.data.length ? d.data.reduce((max, row) => Number(row.score) > Number(max.score) ? row : max) : 0;
+					hi = Math.max(hi, br && br.score ? Number(br.score) : 0);
+					hni = br.player_name && br.player_name != ""
+						? br.player_name
+						: br.user_name && br.user_name != ""
+							? br.user_name
+							: "Guest";
+					HP();
+					MS();
+				}).catch(e=>console.log(e));
+
 			//if(window.top.location.hash) hi=+window.top.location.hash.substr(3)
 			//if(window.location.hash) hi=parseInt(window.location.hash.substr(3))
 			//console.log(hi)
@@ -1110,7 +1153,7 @@
 								} else if(lz[l][c].b==-2&&l==7) {sr+=lz[l][c-1].h>0?0:(p.h+p.m)*5;MS(1);return}//lz[l][c-1].h>0?2:1//check if borel is dead
 								else if(lz[l][c].b<0){
 									lz[l][c].x=t
-									tp=lz[l][c].c==4?0:lz[l][c].c==7?l==3?', become one with the absolute':', good luck':', an apocalyptic storm is coming'
+									tp=lz[l][c].c==4?0:lz[l][c].c==7?l==3?', become one with the absolute':', to the ends of the earth':', an apocalyptic storm is coming'
 								}
 								FX.a()
 							}
@@ -1148,13 +1191,13 @@
 							uk()
 							FX.h(5,1)
 						} else if(r.p==85){
-							tp=', oberon failed repairing the pattern. give up'
+							tp=', give up. oberon failed repairing the pattern!'
 							if(p.r%W>2) r.p=r.r=103//tp=', ok let`s play'}
 						} else {
 							//console.log(p.p, p.r,o.p,o.r,r.p,r.r)
 							if(o.r+1==r.r&&!r.m){
 								//tp=', i see you are fine tuned to the jewel of justice'
-								tp=', where did this bird came from...'
+								tp=', my eye! you wretched thing! get it off me!'
 								FX.h(1,1)
 								r.s=2
 								r.h=0
@@ -1466,7 +1509,7 @@
 				X.t(hp, '  hi-score:'+hi, 4, 0,'#fff')
 				X.t(hp, '\r\r\r\r\r\r\r\r\r\r\r\r\r/13kb code by noncho savov"""//@!foumartgames', 3, 0,'#cfc')
 				X.t(hp, '\r\r\r\r\r\r\r\r""""///based on courts of chaos by roger zelazny\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r//js13k games 2018"""""""""www.foumartgames.com', 2, 0,'#efe')
-				if(hi) X.t(hp, '\r// tweet', 3.6, 0,'#4d4')
+				if(hi && hni) X.t(hp, '\r///' + hni, 3.6, 0,'#4d4')
 				else z.children[z.children.length-1].style.display="none"
 			}
 		}
@@ -1478,11 +1521,15 @@
 			if(d.children.length-e==1)CN(wo[6]+',/dmg:'+wo[8]+' '+wo[9]+' '+wo[10])
 			else CN()
 		}*/
-		HB=(b,a,c)=>{
+		HB=(b,a,c,d)=>{
 			if(aa)return
+			d=(M[s.p]==2||M[s.p]>5)?"magic":M[s.p]==1||M[s.p]==3?"chaos":"order"
 			a=b.target.parentNode
 			c=Array.prototype.indexOf.call(a.children,b.target)
-			a.children.length-c==1?CN(wo[6]+",/dmg:"+wo[8]+" "+wo[9]+" "+wo[10]):CN()
+			a.children.length-c==1?CN(wo[6]+",/dmg:"+wo[8]+" "+wo[9]+" "+wo[10]):
+				a.children.length-c==2 ? CN("Weapon type: " + d) :
+					a.children.length-c==6 || a.children.length-c==7 ? CN("Energy: "+p.m) :
+						a.children.length-c==8 ? CN("Health: "+p.h) : CN("")
 		}
 
 		/*HC=(c)=>{//console.log(c)
@@ -1498,8 +1545,8 @@
 
 		HA=(c,d,e)=>{
 			if(aa)return//k==192
-			d=c.target.parentNode.parentNode.parentNode
-			e=Array.prototype.indexOf.call(d.children,c.target.parentNode.parentNode)
+			d=c.target.parentNode.parentNode.parentNode.parentNode
+			e=Array.prototype.indexOf.call(d.children,c.target.parentNode.parentNode.parentNode)
 			if(e)CN(lz[l][e].i+(lz[l][e].h&&lz[l][e].a?'/hp:'+lz[l][e].h+'/dmg:'+lz[l][e].a:''))
 			else CN()
 		}
@@ -1525,6 +1572,7 @@
 				X.t(hp, '\r\r\r///'+(c==1?'victory':'/defeat')+'/score:'+sr+'""', 7)
 				aa=1
 				k=192
+				document.getElementById('sm').style.display = 'block';
 			} else {
 				Z.o(cl,0,{a:0})
 				X.t(hp, '\r\r"// torm"!haos//ane\r\r""///  !play""\r', 5.25, 0, '#efe'),X.t(hp, '\r///  S////  C//  !B\r\r\r""""', 8.2, 0, '#efe'),X.t(hp, '\r\r\r\r"""" of!the', 3.05)
